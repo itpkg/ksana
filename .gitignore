@@ -1,2 +1,6 @@
 \#*\#
 *.un~
+*.swp
+
+target
+Cargo.lock

@@ -1,0 +1,14 @@
+[package]
+name = "ksana"
+version = "0.0.1"
+authors = ["Jitang Zheng <jitang.zheng@gmail.com>"]
+
+[dependencies]
+utils = { path = "utils" }
+orm = { path = "orm" }
+web = { path = "web" }
+job = { path = "job" }
+cache = { path = "cache" }
+settings = { path = "settings" }
+i18n = { path = "i18n" }
+

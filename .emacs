@@ -2,6 +2,9 @@
 
 (custom-set-variables
    '(initial-frame-alist (quote ((fullscreen . maximized)))))
+(setf inhibit-splash-screen t)
+(switch-to-buffer (get-buffer-create "emtpy"))
+(delete-other-windows)
 
 (tool-bar-mode -1)
 (menu-bar-mode -1)

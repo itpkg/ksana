@@ -1,0 +1,7 @@
+[package]
+name = "web"
+version = "0.1.0"
+authors = ["flamen <jitang.zheng@gmail.com>"]
+
+[dependencies]
+hyper = "0.6.14"
