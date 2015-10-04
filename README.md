@@ -1,4 +1,4 @@
-ksana(a web framwork for rust)
+ksana(a web framwork for rust like rails)
 ---
 
 ## Usage
@@ -11,6 +11,11 @@ ksana(a web framwork for rust)
 	ksana = { git = "https://github.com/itpkg/ksana.git" }
 
     EOF
+
+## Notes
+### cargo
+
+ * Test with output: cargo test -- --nocapture
 
 ## Editor
 

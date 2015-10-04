@@ -1,8 +1,0 @@
-[package]
-name = "utils"
-version = "0.1.0"
-authors = ["flamen <jitang.zheng@gmail.com>"]
-
-[dependencies]
-uuid = "0.1.17"
-rust-crypto = "0.2.31"

@@ -4,11 +4,12 @@ version = "0.0.1"
 authors = ["Jitang Zheng <jitang.zheng@gmail.com>"]
 
 [dependencies]
-utils = { path = "utils" }
-orm = { path = "orm" }
-web = { path = "web" }
-job = { path = "job" }
-cache = { path = "cache" }
-settings = { path = "settings" }
-i18n = { path = "i18n" }
-
+hyper = "0.6.14"
+postgres = "0.10.0"
+mysql = "0.20.1"
+redis = "0.5.0"
+rand = "0.3.11"
+uuid = "0.1.17"
+rustc-serialize = "0.3.16"
+rust-crypto = "0.2.31"
+docopt = "0.6.73"
