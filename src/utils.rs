@@ -10,11 +10,12 @@ use self::rustc_serialize::json;
 use self::rustc_serialize::base64::{ToBase64, FromBase64, STANDARD, FromBase64Error};
 use self::rustc_serialize::{Encodable, Decodable};
 use self::crypto::digest::Digest;
+use self::crypto::md5::Md5;
 use self::crypto::sha1::Sha1;
 use self::crypto::sha2::Sha256;
 use self::crypto::sha2::Sha512;
 
-fn ssha(s: &str, l: usize, dig: &mut Digest) -> String {
+fn encode_with_salt<T: Digest>(s: &str, l: usize, dig: &mut T) -> String {
     
     let salt = random_string(l);
     let mut pwd = s.to_string();
@@ -32,36 +33,44 @@ fn ssha(s: &str, l: usize, dig: &mut Digest) -> String {
     return to_base64(res.borrow_mut());
 }
 
+fn encode<T: Digest>(s: &str, dig: &mut T) -> String {
+    dig.input_str(s);
+    dig.result_str()
+}
+
 pub fn ssha512(s: &str, l: usize) -> String {
     let mut dig = Sha512::new();
-    ssha(s, l, &mut dig)
+    encode_with_salt(s, l, &mut dig)
 }
 
 pub fn ssha256(s: &str, l: usize) -> String {
     let mut dig = Sha256::new();
-    ssha(s, l, &mut dig)
+    encode_with_salt(s, l, &mut dig)
 }
 
+
 pub fn sha1(s: &str) -> String {
-    let mut sha = Sha1::new();
-    sha.input_str(s);
-    sha.result_str()
+    let mut dig = Sha1::new();
+    encode(s, &mut dig)
 }
 
 pub fn sha256(s: &str) -> String {
-    let mut sha = Sha256::new();
-    sha.input_str(s);
-    sha.result_str()
+    let mut dig = Sha256::new();
+    encode(s, &mut dig)
 }
 
 pub fn sha512(s: &str) -> String {
-    let mut sha = Sha512::new();
-    sha.input_str(s);
-    sha.result_str()
+    let mut dig = Sha512::new();
+    encode(s, &mut dig)
+}
+
+pub fn md5(s: &str) -> String {
+    let mut dig = Md5::new();
+    encode(s, &mut dig)
 }
 
 #[test]
-fn test_sha() {    
+fn test_encode() {    
     let hello = "hello";
     let  s512 = sha512(hello);
     assert!(!s512.is_empty());
@@ -77,7 +86,11 @@ fn test_sha() {
     let ss256 = ssha256(hello, 6);
     assert!(!ss256.is_empty());
     println!("doveadm pw -t {}{} -p {}","{SSHA256}", ss256, hello);
-        
+
+    let s_md5 = md5(hello);
+    assert!(!s_md5.is_empty());
+    println!("md5 => {}", s_md5);
+    
 }
 
 pub fn to_json<T: Encodable>(o: &T) -> String {
