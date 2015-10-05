@@ -15,6 +15,7 @@
 (setq-default cursor-type 'bar)
 (blink-cursor-mode -1)
 (column-number-mode t)
+(show-paren-mode 1)
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 
