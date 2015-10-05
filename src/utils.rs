@@ -125,8 +125,12 @@ pub fn random_string(len: usize) -> String {
     rand::thread_rng().gen_ascii_chars().take(len).collect()
 }
 
-pub fn random_bytes(dest: &mut [u8]) {   
-   rand::thread_rng().fill_bytes(dest);   
+pub fn random_bytes(len: usize) -> Box<[u8]> {    
+    let mut val = vec![0u8; len];
+    let mut bys = val.borrow_mut();
+
+    rand::thread_rng().fill_bytes(bys);
+    return bys.to_vec().into_boxed_slice();
 }
 
 #[test]
@@ -137,8 +141,8 @@ fn test_random() {
     assert_eq!(str.len(), size);
     println!("Random string: {}", str);
 
-    let mut bys = [0u8; 32];
-    random_bytes(&mut bys);    
+    let bys = random_bytes(size);
+    assert_eq!(bys.len(), size);
     println!("Random bytes: {:?}", &bys[..]);
 }
 
