@@ -2,59 +2,92 @@ extern crate rand;
 extern crate crypto;
 extern crate rustc_serialize;
 
+use std::cmp::PartialEq;
 use std::borrow::BorrowMut;
 use std::iter::Extend;
 use self::crypto::{sha1, sha2, md5, digest};
 use self::rand::Rng;
-use self::rustc_serialize::base64::{ToBase64, STANDARD};
+use self::rustc_serialize::base64::{ToBase64, FromBase64, STANDARD};
 
 pub trait Encryptor {
     
-    fn sha1(&self) -> String;
-    fn sha256(&self) -> String;
-    fn sha512(&self) -> String;
-    fn md5(&self) -> String;
+    fn sum_sha1(&self) -> String;
+    fn chk_sha1(&self, s: &str) -> bool;
+    fn sum_sha256(&self) -> String;
+    fn chk_sha256(&self, s: &str) -> bool;
+    fn sum_sha512(&self) -> String;
+    fn chk_sha512(&self, s: &str) -> bool;
+    fn sum_md5(&self) -> String;
+    fn chk_md5(&self, s: &str) -> bool;
     
-    fn ssha512(&self, l: usize) -> String;   
-    fn ssha256(&self, l: usize) -> String;
+    fn sum_ssha512(&self, l: usize) -> String;
+    fn chk_ssha512(&self, s: &str, l: usize) -> bool;
+    fn sum_ssha256(&self, l: usize) -> String;
+    fn chk_ssha256(&self, s: &str, l: usize) -> bool;
 
-    fn encrypt<T: digest::Digest>(&self, dig: &mut T) -> String;
-    fn encrypt_with_slat<T: digest::Digest>(&self, dig: &mut T, l: usize) -> String;
+    fn sum<T: digest::Digest>(&self, dig: &mut T) -> String;
+    fn ssum<T: digest::Digest>(&self, dig: &mut T, l: usize) -> String;
+    fn schk<T: digest::Digest>(&self, dig: &mut T, s: &str, l: usize) -> bool;
+  
 }
 
 impl Encryptor for String {
         
-    fn sha1(&self) -> String {        
+    fn sum_sha1(&self) -> String {        
         let mut dig = sha1::Sha1::new();        
-        self.encrypt(&mut dig)        
+        self.sum(&mut dig)        
     }
-    fn sha256(&self) -> String {
+    fn chk_sha1(&self, s: &str) -> bool {
+        let d = s.to_string().sum_sha1();
+        self.eq(&d)
+    }
+    fn sum_sha256(&self) -> String {
         let mut dig = sha2::Sha256::new();
-        self.encrypt(&mut dig)        
+        self.sum(&mut dig)        
     }
-    fn sha512(&self) -> String {
+    fn chk_sha256(&self, s: &str) -> bool {
+        let d = s.to_string().sum_sha256();
+        self.eq(&d)
+    }
+    fn sum_sha512(&self) -> String {
         let mut dig = sha2::Sha512::new();       
-        self.encrypt(&mut dig)        
+        self.sum(&mut dig)        
     }
-    fn md5(&self) -> String {
+    fn chk_sha512(&self, s: &str) -> bool {
+        let d = s.to_string().sum_sha512();
+        self.eq(&d)
+    }
+    fn sum_md5(&self) -> String {
         let mut dig = md5::Md5::new();        
-        self.encrypt(&mut dig)        
+        self.sum(&mut dig)        
+    }
+    fn chk_md5(&self, s: &str) -> bool {
+        let d = s.to_string().sum_md5();
+        self.eq(&d)
     }
 
-    fn ssha256(&self, l: usize) -> String {
+    fn sum_ssha256(&self, l: usize) -> String {
         let mut dig = sha2::Sha256::new();
-        self.encrypt_with_slat(&mut dig, l)        
+        self.ssum(&mut dig, l)        
     }
-    fn ssha512(&self, l: usize) -> String {
+    fn chk_ssha256(&self, s: &str, l: usize) -> bool{
+        let mut dig = sha2::Sha256::new();       
+        self.schk(&mut dig, s, l)
+    }
+    fn sum_ssha512(&self, l: usize) -> String {
         let mut dig = sha2::Sha512::new();       
-        self.encrypt_with_slat(&mut dig, l)        
+        self.ssum(&mut dig, l)        
+    }
+    fn chk_ssha512(&self, s: &str, l: usize) -> bool{
+        let mut dig = sha2::Sha512::new();       
+        self.schk(&mut dig, s, l)
     }
    
-    fn encrypt<T: digest::Digest>(&self, dig: &mut T) -> String {
+    fn sum<T: digest::Digest>(&self, dig: &mut T) -> String {
         dig.input_str(&self);
         dig.result_str()
     }
-    fn encrypt_with_slat<T: digest::Digest>(&self, dig: &mut T, l: usize) -> String {
+    fn ssum<T: digest::Digest>(&self, dig: &mut T, l: usize) -> String {
         let salt: String = rand::thread_rng().gen_ascii_chars().take(l).collect();
         let mut buf = "".to_string();
         buf.push_str(&self);
@@ -69,36 +102,62 @@ impl Encryptor for String {
         res.extend(salt.as_bytes().into_iter());
         res.to_base64(STANDARD)
     }
-
+    fn schk<T: digest::Digest>(&self, dig: &mut T, s: &str, l: usize) -> bool {
+        match self.from_base64() {
+            Ok(buf) => {
+                let (sha, salt) = buf.split_at(buf.len()-l);                
+                let mut sha_v = vec![0u8; dig.block_size()/2];
+                let mut sha_bs = sha_v.borrow_mut();
+                
+                dig.input_str(s);
+                dig.input(salt);
+                dig.result(sha_bs);
+                
+                sha == sha_bs
+            },
+            Err(_) => {
+                false
+            },
+        }
+    }
+    
 }
 
 #[test]
 fn test_encryptor() {
     let hello = "hello".to_string();
+    let world = "world";
     let size = 6;
     
-    let s1 = hello.sha1();
-    assert!(!s1.is_empty());
+    let s1 = hello.sum_sha1();
+    assert!(s1.chk_sha1(&hello));
+    assert!(!s1.chk_sha1(world));
     println!("sha1: {}", s1);
     
-    let s256 = hello.sha256();
-    assert!(!s256.is_empty());
+    let s256 = hello.sum_sha256();
+    assert!(s256.chk_sha256(&hello));
+    assert!(!s256.chk_sha256(world));
     println!("sha256: {}", s256);
     
-    let s512 = hello.sha512();
-    assert!(!s512.is_empty());
+    let s512 = hello.sum_sha512();
+    assert!(s512.chk_sha512(&hello));
+    assert!(!s512.chk_sha512(world));
     println!("sha512: {}", s512);
     
-    let md5 = hello.md5();
-    assert!(!md5.is_empty());
-    println!("md5: {}", md5);
+    let smd5 = hello.sum_md5();
+    assert!(smd5.chk_md5(&hello));
+    assert!(!smd5.chk_md5(world));
+    println!("md5: {}", smd5);
 
     
-    let ss256 = hello.ssha256(size);
-    assert!(!ss256.is_empty());
+    let ss256 = hello.sum_ssha256(size);
+    assert!(ss256.chk_ssha256(&hello, size));
+    assert!(!ss256.chk_ssha256(world, size));
     println!("run: doveadm pw -t {}{} -p {}", "{SSHA256}", ss256, hello);
     
-    let ss512 = hello.ssha512(size);
+    let ss512 = hello.sum_ssha512(size);
     assert!(!ss512.is_empty());
+    assert!(ss512.chk_ssha512(&hello, size));
+    assert!(!ss512.chk_ssha512(world, size));
     println!("run: doveadm pw -t {}{} -p {}", "{SSHA512}", ss512, hello);
 }
