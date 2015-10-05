@@ -3,7 +3,7 @@ pub mod orm ;
 pub mod setting;
 pub mod i18n;
 pub mod cache;
-pub mod utils;
+pub mod crypto;
 
 
 #[test]
