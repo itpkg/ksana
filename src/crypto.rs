@@ -5,16 +5,24 @@ extern crate rustc_serialize;
 use std::cmp::PartialEq;
 use std::borrow::BorrowMut;
 use std::iter::Extend;
-use self::crypto::{sha1, sha2, md5, digest, hmac};
+use self::crypto::{sha1, sha2, md5, digest, hmac, aes};
 use self::crypto::mac::{Mac};
+use self::crypto::symmetriccipher::{SynchronousStreamCipher};
 use self::rand::Rng;
 use self::rustc_serialize::base64::{ToBase64, FromBase64, STANDARD};
 use self::rustc_serialize::hex::ToHex;
 
 pub trait Encryptor {
 
-    fn en_aes(&self, k: &str) -> String;
-    fn de_aes(&self, k: &str) -> String;
+    fn en_aes128(&self, k: &str) -> String;
+    fn de_aes128(&self, k: &str) -> String;
+    //fn en_aes192(&self, k: &str) -> String;
+    //fn de_aes192(&self, k: &str) -> String;
+    fn en_aes256(&self, k: &str) -> String;
+    fn de_aes256(&self, k: &str) -> String;
+    fn en_aes(&self, ks: aes::KeySize, k: &str) -> String;
+    fn de_aes(&self, ks: aes::KeySize, k: &str) -> String;
+
 
     fn sum_hmac_md5(&self, k: &str) -> String;
     fn chk_hmac_md5(&self, s: &str, k: &str) -> bool;
@@ -43,11 +51,67 @@ pub trait Encryptor {
 
 impl Encryptor for String {
 
-    fn en_aes(&self, k: &str) -> String {
-        k.to_string()
+   
+    fn en_aes128(&self, k: &str) -> String {
+        self.en_aes(aes::KeySize::KeySize128, k)
     }
-    fn de_aes(&self, k: &str) -> String {
-        k.to_string()
+    fn de_aes128(&self, k: &str) -> String{
+        self.de_aes(aes::KeySize::KeySize128, k)
+    }
+    /*
+    fn en_aes192(&self, k: &str) -> String{
+        self.en_aes(aes::KeySize::KeySize192, k)
+    }
+    fn de_aes192(&self, k: &str) -> String{
+        self.de_aes(aes::KeySize::KeySize192, k)
+    }
+*/
+    fn en_aes256(&self, k: &str) -> String{
+        self.en_aes(aes::KeySize::KeySize256, k)
+    }
+    fn de_aes256(&self, k: &str) -> String{
+        self.de_aes(aes::KeySize::KeySize256, k)
+    }
+    fn en_aes(&self, ks: aes::KeySize, k: &str) -> String {                  
+        
+        let l = match ks {
+            aes::KeySize::KeySize128 => 16,
+            aes::KeySize::KeySize192 => 24,
+            aes::KeySize::KeySize256 => 32,
+        };
+        let mut nonce_v = vec![0u8; l];
+        let mut nonce = nonce_v.borrow_mut();
+        rand::thread_rng().fill_bytes(nonce);
+        
+        let mut cip = aes::ctr(ks, k.as_bytes(), nonce);
+        let mut res = vec![0u8; self.len()];
+        cip.process(self.as_bytes(), res.borrow_mut());
+        res.extend(nonce.to_vec().into_iter());
+
+        res.to_base64(STANDARD)
+
+    }
+    fn de_aes(&self, ks: aes::KeySize, k: &str) ->String {
+        let l = match ks {
+            aes::KeySize::KeySize128 => 16,
+            aes::KeySize::KeySize192 => 24,
+            aes::KeySize::KeySize256 => 32,
+        };
+
+        match self.from_base64(){
+            Ok(buf) => {
+                println!("####  {}, {}", buf.len(), l);
+                let (code, nonce) = buf.split_at(buf.len()-l);                
+                let mut res = vec![0u8; code.len()];
+                let mut cip = aes::ctr(ks, k.as_bytes(), nonce);
+                cip.process(code, res.borrow_mut());
+                String::from_utf8(res).unwrap()                
+            },
+            Err(_) => {
+                "".to_string()
+            },
+        }
+                
     }
     
     fn sum_hmac_md5(&self,  k: &str) -> String {
@@ -155,6 +219,7 @@ impl Encryptor for String {
     
 }
 
+
 #[test]
 fn test_encryptor() {
     let hello = "hello".to_string();
@@ -197,5 +262,26 @@ fn test_encryptor() {
     assert!(hmd5.chk_hmac_md5(&hello, key));
     assert!(!hmd5.chk_hmac_md5(world, key));
     println!("hmac md5: {}", hmd5);
+
+    let key16="1234567890123456";
+    let aes128 =  hello.en_aes128(key16);
+    let hello128 = aes128.de_aes128(key16);
+    assert_eq!(hello, hello128);
+    println!("aes128: {}", aes128);
+
+    let key32="12345678901234567890123456789012";
+    let aes256 =  hello.en_aes256(key32);
+    let hello256 = aes256.de_aes256(key32);
+    assert_eq!(hello, hello256);
+    println!("aes256: {}", aes256);
+
+    /*
+    let key24="123456789012345678901234";
+    let aes192 =  hello.en_aes192(key24);
+    let hello192 = aes192.de_aes192(key24);
+    assert_eq!(hello, hello192);
+    println!("aes192: {}", aes192);
+*/
+
     
 }
