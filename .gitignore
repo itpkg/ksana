@@ -2,5 +2,3 @@
 *~
 *.swp
 
-target
-Cargo.lock

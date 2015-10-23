@@ -37,3 +37,7 @@
 (autoload 'rust-mode "rust-mode" nil t)
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
 
+;git clone https://github.com/dominikh/go-mode.el.git ~/.emacs.d/go-mode
+(add-to-list 'load-path "~/emacs.d/go-mode/")
+(require 'go-mode-autoloads)
+
