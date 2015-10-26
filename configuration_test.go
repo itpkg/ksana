@@ -1,8 +1,6 @@
 package ksana_test
 
 import (
-	"io/ioutil"
-	"os"
 	"testing"
 
 	ks "github.com/itpkg/ksana"
@@ -15,6 +13,7 @@ func TestCfgStore(t *testing.T) {
 	buf, _ := ks.RandomBytes(512)
 	cfg := ks.Configuration{
 		Http: ks.HttpCfg{
+			Host:    "localhost",
 			Port:    port,
 			Secrets: ks.ToBase64(buf),
 		},
@@ -41,24 +40,15 @@ func TestCfgStore(t *testing.T) {
 		},
 	}
 
-	fi, err := os.Create(cfg_file)
-	if err != nil {
-		t.Errorf("open file error: %v", err)
-	}
-	defer fi.Close()
-	if err = cfg.Store(fi); err != nil {
+	if err := cfg.Store(cfg_file); err != nil {
 		t.Errorf("store cfg error: %v", err)
 	}
 
 }
 
 func TestCfgLoad(t *testing.T) {
-	buf, err := ioutil.ReadFile(cfg_file)
-	if err != nil {
-		t.Errorf("open file error: %v", err)
-	}
 	var cfg ks.Configuration
-	if err = cfg.Load(string(buf)); err != nil {
+	if err := cfg.Load(cfg_file); err != nil {
 		t.Errorf("load cfg error: %v", err)
 	}
 	t.Logf("cfg redis: %v", cfg.Redis)

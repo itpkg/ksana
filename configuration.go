@@ -1,12 +1,13 @@
 package ksana
 
 import (
-	"io"
+	"os"
 
 	"github.com/BurntSushi/toml"
 )
 
 type Configuration struct {
+	Env           string           `toml:"-"`
 	Http          HttpCfg          `toml:"http"`
 	Database      DatabaseCfg      `toml:"database"`
 	Redis         RedisCfg         `toml:"redis"`
@@ -14,39 +15,46 @@ type Configuration struct {
 }
 
 type HttpCfg struct {
-	Port    int
-	Secrets string
+	Host    string `toml:"host"`
+	Port    int    `toml:"port"`
+	Secrets string `toml:"secrets"`
 }
 
 type DatabaseCfg struct {
-	Dialect string
-	Url     string
+	Dialect string  `toml:"dialect"`
+	Url     string  `toml:"url"`
 	Pool    PoolCfg `toml:"pool"`
 }
 
 type RedisCfg struct {
-	Host string
-	Port int
-	Db   int
+	Host string  `toml:"host"`
+	Port int     `toml:"port"`
+	Db   int     `toml:"db"`
 	Pool PoolCfg `toml:"pool"`
 }
 
 type PoolCfg struct {
-	MaxIdle int
-	MaxOpen int
+	MaxIdle int `toml:"max_idle"`
+	MaxOpen int `toml:"max_open"`
 }
 
 type ElasticsearchCfg struct {
-	Host string
-	Port int
+	Host string `toml:"host"`
+	Port int    `toml:"port"`
 }
 
-func (p *Configuration) Store(w io.Writer) error {
-	end := toml.NewEncoder(w)
+func (p *Configuration) Store(file string) error {
+	fi, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer fi.Close()
+
+	end := toml.NewEncoder(fi)
 	return end.Encode(p)
 }
 
-func (p *Configuration) Load(data string) error {
-	_, err := toml.Decode(data, p)
+func (p *Configuration) Load(file string) error {
+	_, err := toml.DecodeFile(file, p)
 	return err
 }
