@@ -17,12 +17,12 @@ func TestAes(t *testing.T) {
 	c, _ := aes.NewCipher(key)
 	a := ks.Aes{Cip: c}
 
-	dest1, iv1, _ := a.Encrypt(hello)
-	dest2, iv2, _ := a.Encrypt(hello)
-	t.Logf("AES1(%d, iv=%x): %s => %x", len(dest1), iv1, hello, dest1)
-	t.Logf("AES2(%d, iv=%x): %s => %x", len(dest2), iv2, hello, dest2)
+	dest1, _ := a.Encrypt(hello)
+	dest2, _ := a.Encrypt(hello)
+	t.Logf("AES1: %s", dest1)
+	t.Logf("AES2: %s", dest2)
 
-	src := a.Decrypt(dest1, iv1)
+	src, _ := a.Decrypt(dest1)
 	if string(src) != string(hello) {
 		t.Errorf("val == %x, want %x", src, hello)
 	}
