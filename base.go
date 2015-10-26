@@ -258,12 +258,14 @@ server {
 							if err := ioutil.WriteFile(fn, cert, 0644); err != nil {
 								log.Fatal(err)
 							}
+							log.Printf("Verify: openssl x509 -noout -modulus -in %s | openssl md5", fn)
 
 							fn = fmt.Sprintf("%s/%s.key.pem", root, name)
 							log.Printf("Generate file %s\n", fn)
 							if err := ioutil.WriteFile(fn, key, 0600); err != nil {
 								log.Fatal(err)
 							}
+							log.Printf("Verify: openssl rsa -noout -modulus -in %s | openssl md5", fn)
 
 							log.Println("Done.")
 						} else {

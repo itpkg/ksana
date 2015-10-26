@@ -7,7 +7,7 @@ import (
 	"github.com/itpkg/ksana"
 )
 
-const hello = "Hello, IT-PACKAGE!!!"
+const hello = "Hello, KSANA."
 
 var now = time.Now()
 var obj = map[string]interface{}{"message": hello, "ok": true, "value": 1.1, "time": now}

@@ -66,3 +66,11 @@ func TestSha(t *testing.T) {
 		t.Errorf("ssha512 error: %v", e)
 	}
 }
+
+func TestDovecot(t *testing.T) {
+	if s, e := ks.Ssha512([]byte(hello), 6); e == nil {
+		t.Logf("Please run: doveadm pw -t {SSHA512}%s -p \"%s\"", s, hello)
+	} else {
+		t.Errorf("bad in test dovecot: %v", e)
+	}
+}
