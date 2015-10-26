@@ -8,8 +8,6 @@ import (
 	ks "github.com/itpkg/ksana"
 )
 
-var hello = []byte("Hello, KSANA!")
-
 const salt_len = 32
 
 func TestAes(t *testing.T) {
@@ -17,13 +15,13 @@ func TestAes(t *testing.T) {
 	c, _ := aes.NewCipher(key)
 	a := ks.Aes{Cip: c}
 
-	dest1, _ := a.Encrypt(hello)
-	dest2, _ := a.Encrypt(hello)
+	dest1, _ := a.Encrypt([]byte(hello))
+	dest2, _ := a.Encrypt([]byte(hello))
 	t.Logf("AES1: %s", dest1)
 	t.Logf("AES2: %s", dest2)
 
 	src, _ := a.Decrypt(dest1)
-	if string(src) != string(hello) {
+	if string(src) != hello {
 		t.Errorf("val == %x, want %x", src, hello)
 	}
 
@@ -48,15 +46,16 @@ func TestHmac(t *testing.T) {
 }
 
 func TestMd5(t *testing.T) {
-	t.Logf("md5: %s", ks.Md5(hello))
+	t.Logf("md5: %s", ks.Md5([]byte(hello)))
 }
+
 func TestSha(t *testing.T) {
 
-	t.Logf("sha512: %s", ks.Sha512(hello))
+	t.Logf("sha512: %s", ks.Sha512([]byte(hello)))
 
-	if s, e := ks.Ssha512(hello, salt_len); e == nil {
+	if s, e := ks.Ssha512([]byte(hello), salt_len); e == nil {
 		t.Logf("ssha512: %s", s)
-		if b, e := ks.Csha512(s, hello); e == nil {
+		if b, e := ks.Csha512(s, []byte(hello)); e == nil {
 			if !b {
 				t.Errorf("csha512 error")
 			}

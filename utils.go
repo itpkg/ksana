@@ -6,6 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"reflect"
@@ -15,6 +17,21 @@ import (
 
 	"github.com/pborman/uuid"
 )
+
+func Mkdirs(d string) error {
+	fi, err := os.Stat(d)
+	if err == nil {
+		if fi.IsDir() {
+			return nil
+		}
+		return errors.New(fmt.Sprintf("%s is a file", d))
+	}
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(d, 0755)
+	}
+	return err
+
+}
 
 func Uuid() string {
 	return uuid.New()

@@ -1,9 +1,15 @@
 package ksana
 
+import (
+	"github.com/codegangsta/cli"
+)
+
+type EngineHandler func(en Engine) error
+
 type Engine interface {
 	Router()
-	Migrate()
+	Migrate() error
 	Job()
 	Deploy()
-	Shell()
+	Shell() []cli.Command
 }
