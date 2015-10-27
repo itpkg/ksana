@@ -1,10 +1,13 @@
 package ksana
 
 import (
+	"strconv"
+
 	"github.com/codegangsta/cli"
 	"github.com/garyburd/redigo/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"github.com/jrallison/go-workers"
 	"github.com/op/go-logging"
 )
 
@@ -23,13 +26,26 @@ func New(c *cli.Context) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
+	var db *gorm.DB
+	if db, err = cfg.Db(); err != nil {
+		return nil, err
+	}
+
 	app := Application{}
-	if err = Use(&app, cfg); err != nil {
+	if err = Use(&app, db, cfg); err != nil {
 		return nil, err
 	}
 	if err = beans.Populate(); err != nil {
 		return nil, err
 	}
+
+	//------workers---------------------------
+	workers.Configure(map[string]string{
+		"server":   cfg.Redis.Server(),
+		"database": strconv.Itoa(cfg.Redis.Db),
+		"pool":     "10",
+		"process":  "1",
+	})
 
 	return &app, nil
 }

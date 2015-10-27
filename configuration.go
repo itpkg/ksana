@@ -36,6 +36,10 @@ type RedisCfg struct {
 	Pool PoolCfg `toml:"pool"`
 }
 
+func (p *RedisCfg) Server() string {
+	return fmt.Sprintf("%s:%d", p.Host, p.Port)
+}
+
 type PoolCfg struct {
 	MaxIdle int `toml:"max_idle"`
 	MaxOpen int `toml:"max_open"`

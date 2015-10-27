@@ -20,15 +20,19 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/codegangsta/cli"
 	"github.com/jinzhu/gorm"
+	"github.com/jrallison/go-workers"
 )
 
 type BaseEngine struct {
+	Db *gorm.DB `inject:""`
 }
 
 func (p *BaseEngine) Router() {
 }
 
-func (p *BaseEngine) Migrate(db *gorm.DB) error {
+func (p *BaseEngine) Migrate() error {
+	db := p.Db
+
 	db.AutoMigrate(&Setting{}, &Locale{}, &User{}, &Log{}, &Role{}, &Permission{})
 	db.Model(&Locale{}).AddUniqueIndex("idx_base_locales_lang_type_key", "lang", "type", "key")
 	db.Model(&User{}).AddUniqueIndex("idx_base_users_uid_provider", "uid", "provider")
@@ -38,26 +42,23 @@ func (p *BaseEngine) Migrate(db *gorm.DB) error {
 }
 
 func (p *BaseEngine) Job() {
+	workers.Process("email",
+		func(message *workers.Msg) {
+
+		},
+		5)
 }
 
-func (p *BaseEngine) Seed(db *gorm.DB) error {
+func (p *BaseEngine) Seed() error {
+	db := p.Db
 	//--------------administrator-------------
 	admin_e := "root@localhost.localdomain"
-	admin_p := "local"
-	var cn int
-	db.Model(User{}).Where(&User{Email: admin_e, Provider: admin_p}).Count(&cn)
-	if cn == 0 {
-		pwd, err := Ssha512([]byte("changeme"), 8)
+
+	if !IsEmailUserExist(db, admin_e) {
+		admin_u, err := CreateEmailUser(db, "Admin", admin_e, "changeme")
 		if err != nil {
 			return err
 		}
-		admin_u := User{
-			Username: "Admin",
-			Email:    admin_e,
-			Uid:      Uuid(),
-			Password: pwd,
-		}
-		db.Create(&admin_u)
 		role_a := Role{Name: "admin"}
 		role_r := Role{Name: "root"}
 		db.Create(&role_a)
@@ -141,17 +142,12 @@ func (p *BaseEngine) Shell() []cli.Command {
 						KSANA_ENV,
 					},
 					Action: func(c *cli.Context) {
-						cfg, err := Load(c)
-						if err != nil {
-							log.Fatal(err)
-						}
-						var db *gorm.DB
-						db, err = cfg.Db()
+						_, err := New(c)
 						if err != nil {
 							log.Fatal(err)
 						}
 						if err = LoopEngine(func(en Engine) error {
-							return en.Seed(db)
+							return en.Seed()
 						}); err != nil {
 							log.Fatal(err)
 						}
@@ -167,17 +163,12 @@ func (p *BaseEngine) Shell() []cli.Command {
 						KSANA_ENV,
 					},
 					Action: func(c *cli.Context) {
-						cfg, err := Load(c)
-						if err != nil {
-							log.Fatal(err)
-						}
-						var db *gorm.DB
-						db, err = cfg.Db()
+						_, err := New(c)
 						if err != nil {
 							log.Fatal(err)
 						}
 						if err = LoopEngine(func(en Engine) error {
-							return en.Migrate(db)
+							return en.Migrate()
 						}); err != nil {
 							log.Fatal(err)
 						}
@@ -595,6 +586,28 @@ type Permission struct {
 
 func (p Permission) TableName() string {
 	return "base_permissions"
+}
+
+//==============================================================================
+func IsEmailUserExist(db *gorm.DB, email string) bool {
+	var cn int
+	db.Model(User{}).Where(&User{Email: email, Provider: "email"}).Count(&cn)
+	return cn > 0
+}
+func CreateEmailUser(db *gorm.DB, username, email, password string) (*User, error) {
+	pwd, err := Ssha512([]byte(password), 8)
+	if err != nil {
+		return nil, err
+	}
+	user := User{
+		Username: username,
+		Email:    email,
+		Uid:      Uuid(),
+		Password: pwd,
+		Provider: "email",
+	}
+	db.Create(&user)
+	return &user, nil
 }
 
 //==============================================================================
