@@ -27,8 +27,11 @@ func (p *BaseEngine) Router() {
 }
 
 func (p *BaseEngine) Migrate(db *gorm.DB) error {
-	db.AutoMigrate(&Setting{}, &Locale{})
-	db.Model(&Locale{}).AddUniqueIndex("idx_locales_lang_key", "lang", "key")
+	db.AutoMigrate(&Setting{}, &Locale{}, &User{}, &Log{}, &Role{}, &Permission{})
+	db.Model(&Locale{}).AddUniqueIndex("idx_base_locales_lang_type_key", "lang", "type", "key")
+	db.Model(&User{}).AddUniqueIndex("idx_base_users_uid_provider", "uid", "provider")
+	db.Model(&Role{}).AddUniqueIndex("idx_base_roles_resource_type_id", "resource_type", "resource_id")
+	db.Model(&Permission{}).AddUniqueIndex("idx_base_permissions_role_user", "role_id", "user_id")
 	return nil
 }
 
@@ -135,11 +138,12 @@ func (p *BaseEngine) Shell() []cli.Command {
 
 						switch db {
 						case "postgresql":
-							cfg.Database.Url = "user=postgres dbname=itpkg sslmode=disable"
+							cfg.Database.Dialect = "postgres"
+							cfg.Database.Url = fmt.Sprintf("user=postgres dbname=itpkg_%s sslmode=disable", env)
 						case "mysql":
-							cfg.Database.Url = "root:@/itpkg?charset=utf8&parseTime=True&loc=Local"
+							cfg.Database.Url = fmt.Sprintf("root:@/itpkg_%s?charset=utf8&parseTime=True&loc=Local", env)
 						case "sqlite3":
-							cfg.Database.Url = "tmp/itpkg.db"
+							cfg.Database.Url = fmt.Sprintf("tmp/itpkg_%s.db", env)
 						default:
 							log.Fatalf("Unsupport database %s", db)
 						}
@@ -398,16 +402,86 @@ func generate_certificate(name, hosts string, ca bool, size int, years int) ([]b
 }
 
 //==============================================================================
+type Model struct {
+	ID        uint      `gorm:"primary_key"`
+	CreatedAt time.Time `sql:"not null"`
+	UpdatedAt time.Time `sql:"not null"`
+}
 type Setting struct {
-	gorm.Model
+	Model
 	Key string `sql:"size:255;not null;unique"`
 	Val []byte `sql:"not null"`
 }
+
+func (p Setting) TableName() string {
+	return "base_settings"
+}
+
 type Locale struct {
-	gorm.Model
+	Model
 	Lang string `sql:"size:5;not null;index"`
 	Key  string `sql:"size:255;not null;index"`
 	Val  string `sql:"type:TEXT;not null"`
+	Type string `sql:"size:8;not null;index"`
+}
+
+func (p Locale) TableName() string {
+	return "base_locales"
+}
+
+type User struct {
+	Model
+	Username    string `sql:"size:255;not null;index"`
+	Email       string `sql:"size:255;not null;unique"`
+	Uid         string `sql:"size:255;not null;index"`
+	Provider    string `sql:"size:8;not null;index"`
+	Password    []byte
+	Details     []byte
+	Logs        []Log
+	Permissions []Permission
+}
+
+func (p User) TableName() string {
+	return "base_users"
+}
+
+type Log struct {
+	ID        uint `gorm:"primary_key"`
+	User      User
+	UserID    uint      `sql:"not null"`
+	Message   string    `sql:"size:255;not null"`
+	CreatedAt time.Time `sql:"not null"`
+}
+
+func (p Log) TableName() string {
+	return "base_logs"
+}
+
+type Role struct {
+	Model
+
+	ResourceType string `sql:"size:255;not null;index"`
+	ResourceID   uint   `sql:"not null;index"`
+	Permissions  []Permission
+}
+
+func (p Role) TableName() string {
+	return "base_roles"
+}
+
+type Permission struct {
+	Model
+
+	User     User
+	UserID   uint `sql:"not null"`
+	Role     Role
+	RoleID   uint      `sql:"not null"`
+	StartUp  time.Time `sql:"not null;type:DATE"`
+	ShutDown time.Time `sql:"not null;type:DATE"`
+}
+
+func (p Permission) TableName() string {
+	return "base_permissions"
 }
 
 //==============================================================================

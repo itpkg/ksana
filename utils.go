@@ -18,6 +18,10 @@ import (
 	"github.com/pborman/uuid"
 )
 
+func PkgRoot(o interface{}) string {
+	return fmt.Sprintf("%s/src/%s", os.Getenv("GOPATH"), reflect.TypeOf(o).Elem().PkgPath())
+}
+
 func Mkdirs(d string) error {
 	fi, err := os.Stat(d)
 	if err == nil {
