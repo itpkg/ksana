@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -16,6 +17,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/codegangsta/cli"
 	"github.com/jinzhu/gorm"
 )
@@ -30,12 +32,89 @@ func (p *BaseEngine) Migrate(db *gorm.DB) error {
 	db.AutoMigrate(&Setting{}, &Locale{}, &User{}, &Log{}, &Role{}, &Permission{})
 	db.Model(&Locale{}).AddUniqueIndex("idx_base_locales_lang_type_key", "lang", "type", "key")
 	db.Model(&User{}).AddUniqueIndex("idx_base_users_uid_provider", "uid", "provider")
-	db.Model(&Role{}).AddUniqueIndex("idx_base_roles_resource_type_id", "resource_type", "resource_id")
+	db.Model(&Role{}).AddUniqueIndex("idx_base_roles_name_resource_type_id", "name", "resource_type", "resource_id")
 	db.Model(&Permission{}).AddUniqueIndex("idx_base_permissions_role_user", "role_id", "user_id")
 	return nil
 }
 
 func (p *BaseEngine) Job() {
+}
+
+func (p *BaseEngine) Seed(db *gorm.DB) error {
+	//--------------administrator-------------
+	admin_e := "root@localhost.localdomain"
+	admin_p := "local"
+	var cn int
+	db.Model(User{}).Where(&User{Email: admin_e, Provider: admin_p}).Count(&cn)
+	if cn == 0 {
+		pwd, err := Ssha512([]byte("changeme"), 8)
+		if err != nil {
+			return err
+		}
+		admin_u := User{
+			Username: "Admin",
+			Email:    admin_e,
+			Uid:      Uuid(),
+			Password: pwd,
+		}
+		db.Create(&admin_u)
+		role_a := Role{Name: "admin"}
+		role_r := Role{Name: "root"}
+		db.Create(&role_a)
+		db.Create(&role_r)
+
+		begin := time.Now()
+		end := begin.AddDate(10, 0, 0)
+		db.Create(&Permission{
+			RoleID:   role_a.ID,
+			UserID:   admin_u.ID,
+			StartUp:  begin,
+			ShutDown: end,
+		})
+		db.Create(&Permission{
+			RoleID:   role_r.ID,
+			UserID:   admin_u.ID,
+			StartUp:  begin,
+			ShutDown: end,
+		})
+		db.Create(&Log{
+			UserID:  admin_u.ID,
+			Message: "Init.",
+		})
+	}
+	//--------------locales-------------------
+	root := fmt.Sprintf("%s/locales", PkgRoot(p))
+	files, err := ioutil.ReadDir(root)
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		fn := fmt.Sprintf("%s/%s", root, f.Name())
+		log.Printf("Find locale file %s", fn)
+		ss := strings.Split(f.Name(), ".")
+		if len(ss) != 3 {
+			return errors.New(fmt.Sprintf("bad locale file name %s", f.Name))
+		}
+		items := make(map[string]string, 0)
+		if _, err := toml.DecodeFile(fn, &items); err != nil {
+			return err
+		}
+		for k, v := range items {
+			var cn int
+			db.Model(Locale{}).Where(&Locale{Type: ss[0], Lang: ss[1], Key: k}).Count(&cn)
+			if cn == 0 {
+				db.Create(&Locale{
+					Type: ss[0],
+					Lang: ss[1],
+					Key:  k,
+					Val:  v,
+				})
+			}
+		}
+
+	}
+
+	return nil
 }
 
 func (p *BaseEngine) Deploy() {
@@ -44,9 +123,42 @@ func (p *BaseEngine) Deploy() {
 func (p *BaseEngine) Shell() []cli.Command {
 	return []cli.Command{
 		{
-			Name:  "db",
-			Usage: "database operations",
+			Name:        "assets",
+			Aliases:     []string{"ass"},
+			Usage:       "assets operations",
+			Subcommands: []cli.Command{},
+		},
+		{
+			Name:    "database",
+			Aliases: []string{"db"},
+			Usage:   "database operations",
 			Subcommands: []cli.Command{
+				{
+					Name:    "seed",
+					Aliases: []string{"s"},
+					Usage:   "load the seed data into database",
+					Flags: []cli.Flag{
+						KSANA_ENV,
+					},
+					Action: func(c *cli.Context) {
+						cfg, err := Load(c)
+						if err != nil {
+							log.Fatal(err)
+						}
+						var db *gorm.DB
+						db, err = cfg.Db()
+						if err != nil {
+							log.Fatal(err)
+						}
+						if err = LoopEngine(func(en Engine) error {
+							return en.Seed(db)
+						}); err != nil {
+							log.Fatal(err)
+						}
+						log.Println("Done.")
+
+					},
+				},
 				{
 					Name:    "migrate",
 					Aliases: []string{"m"},
@@ -435,7 +547,7 @@ type User struct {
 	Email       string `sql:"size:255;not null;unique"`
 	Uid         string `sql:"size:255;not null;index"`
 	Provider    string `sql:"size:8;not null;index"`
-	Password    []byte
+	Password    string `sql:"size:255"`
 	Details     []byte
 	Logs        []Log
 	Permissions []Permission
@@ -460,8 +572,9 @@ func (p Log) TableName() string {
 type Role struct {
 	Model
 
-	ResourceType string `sql:"size:255;not null;index"`
-	ResourceID   uint   `sql:"not null;index"`
+	Name         string `sql:"size:255;not null;index"`
+	ResourceType string `sql:"size:255;not null;index;default:''"`
+	ResourceID   uint   `sql:"not null;index;default:0"`
 	Permissions  []Permission
 }
 
@@ -476,8 +589,8 @@ type Permission struct {
 	UserID   uint `sql:"not null"`
 	Role     Role
 	RoleID   uint      `sql:"not null"`
-	StartUp  time.Time `sql:"not null;type:DATE"`
-	ShutDown time.Time `sql:"not null;type:DATE"`
+	StartUp  time.Time `sql:"not null;type:DATE;default:'9999-12-31'"`
+	ShutDown time.Time `sql:"not null;type:DATE;default:'2015-10-27'"`
 }
 
 func (p Permission) TableName() string {

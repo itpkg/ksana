@@ -1,0 +1,2 @@
+"user.confirm.subject" = "激活你的账户"
+"user.confirm.body" = "欢迎{{.Username}}: 请 <a href='{{.Url}}'>点击此处</a> 进行确认"

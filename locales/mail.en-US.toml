@@ -1,0 +1,2 @@
+"user.confirm.subject" = "Confirm your account."
+"user.confirm.body" = "Welcome {{.Username}}: Please click <a href='{{.Url}}'>Click me</a>>"

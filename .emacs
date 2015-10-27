@@ -19,6 +19,7 @@
 (show-paren-mode 1)
 
 (defalias 'yes-or-no-p 'y-or-n-p)
+(setq tab-width 4)
 
 ;(setq make-backup-files nil)
 

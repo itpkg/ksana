@@ -9,6 +9,7 @@ type EngineHandler func(en Engine) error
 
 type Engine interface {
 	Router()
+	Seed(*gorm.DB) error
 	Migrate(*gorm.DB) error
 	Job()
 	Deploy()

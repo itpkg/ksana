@@ -19,8 +19,8 @@ func TestReflect(t *testing.T) {
 
 func TestLocale(t *testing.T) {
 	lcs := make(map[string]string, 0)
-	lcs["aaa"] = "AAA"
-	lcs["bbb"] = "BBB"
+	lcs["aaa.1"] = "AAA.1"
+	lcs["bbb.1"] = "BBB.1"
 
 	end := toml.NewEncoder(os.Stdout)
 	if err := end.Encode(lcs); err != nil {
