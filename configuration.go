@@ -6,6 +6,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/codegangsta/cli"
+	"github.com/jinzhu/gorm"
 )
 
 type Configuration struct {
@@ -60,6 +61,25 @@ func (p *Configuration) Store(file string) error {
 func (p *Configuration) Load(file string) error {
 	_, err := toml.DecodeFile(file, p)
 	return err
+}
+
+func (p *Configuration) IsProduction() bool {
+	return p.Env == "production"
+}
+
+func (p *Configuration) Db() (*gorm.DB, error) {
+	db, err := gorm.Open(p.Database.Dialect, p.Database.Url)
+	if err != nil {
+		return nil, err
+	}
+	db.LogMode(!p.IsProduction())
+
+	db.DB().SetMaxIdleConns(p.Database.Pool.MaxIdle)
+	db.DB().SetMaxOpenConns(p.Database.Pool.MaxOpen)
+	if err = db.DB().Ping(); err != nil {
+		return nil, err
+	}
+	return &db, nil
 }
 
 //==============================================================================

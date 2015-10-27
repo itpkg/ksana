@@ -1,4 +1,5 @@
-(set-default-font "WenQuanYi Zen Hei 12")
+;(set-default-font "WenQuanYi Zen Hei 12")
+(set-default-font "YaHei Consolas Hybrid 14")
 
 (custom-set-variables
    '(initial-frame-alist (quote ((fullscreen . maximized)))))
@@ -41,3 +42,10 @@
 (add-to-list 'load-path "~/.emacs.d/go-mode/")
 (require 'go-mode-autoloads)
 
+
+;backup/autosave
+(defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
+(defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
+(setq backup-directory-alist (list (cons ".*" backup-dir)))
+(setq auto-save-list-file-prefix autosave-dir)
+(setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))

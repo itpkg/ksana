@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	"github.com/jinzhu/gorm"
 )
 
 type BaseEngine struct {
@@ -25,7 +26,9 @@ type BaseEngine struct {
 func (p *BaseEngine) Router() {
 }
 
-func (p *BaseEngine) Migrate() error {
+func (p *BaseEngine) Migrate(db *gorm.DB) error {
+	db.AutoMigrate(&Setting{}, &Locale{})
+	db.Model(&Locale{}).AddUniqueIndex("idx_locales_lang_key", "lang", "key")
 	return nil
 }
 
@@ -37,6 +40,37 @@ func (p *BaseEngine) Deploy() {
 
 func (p *BaseEngine) Shell() []cli.Command {
 	return []cli.Command{
+		{
+			Name:  "db",
+			Usage: "database operations",
+			Subcommands: []cli.Command{
+				{
+					Name:    "migrate",
+					Aliases: []string{"m"},
+					Usage:   "migrate the database",
+					Flags: []cli.Flag{
+						KSANA_ENV,
+					},
+					Action: func(c *cli.Context) {
+						cfg, err := Load(c)
+						if err != nil {
+							log.Fatal(err)
+						}
+						var db *gorm.DB
+						db, err = cfg.Db()
+						if err != nil {
+							log.Fatal(err)
+						}
+						if err = LoopEngine(func(en Engine) error {
+							return en.Migrate(db)
+						}); err != nil {
+							log.Fatal(err)
+						}
+						log.Println("Done.")
+					},
+				},
+			},
+		},
 		{
 			Name:    "generate",
 			Aliases: []string{"g"},
@@ -361,6 +395,19 @@ func generate_certificate(name, hosts string, ca bool, size int, years int) ([]b
 	}
 
 	return certOut.Bytes(), keyOut.Bytes(), nil
+}
+
+//==============================================================================
+type Setting struct {
+	gorm.Model
+	Key string `sql:"size:255;not null;unique"`
+	Val []byte `sql:"not null"`
+}
+type Locale struct {
+	gorm.Model
+	Lang string `sql:"size:5;not null;index"`
+	Key  string `sql:"size:255;not null;index"`
+	Val  string `sql:"type:TEXT;not null"`
 }
 
 //==============================================================================
