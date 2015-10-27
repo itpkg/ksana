@@ -1,9 +1,11 @@
 package ksana
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/BurntSushi/toml"
+	"github.com/codegangsta/cli"
 )
 
 type Configuration struct {
@@ -52,9 +54,23 @@ func (p *Configuration) Store(file string) error {
 
 	end := toml.NewEncoder(fi)
 	return end.Encode(p)
+
 }
 
 func (p *Configuration) Load(file string) error {
 	_, err := toml.DecodeFile(file, p)
 	return err
+}
+
+//==============================================================================
+func Load(c *cli.Context) (*Configuration, error) {
+
+	var cfg Configuration
+	env := c.String("environment")
+	if err := cfg.Load(fmt.Sprintf("config/%s/settings.toml", env)); err == nil {
+		cfg.Env = env
+		return &cfg, nil
+	} else {
+		return nil, err
+	}
 }

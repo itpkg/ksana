@@ -1,6 +1,7 @@
 package ksana
 
 import (
+	"github.com/codegangsta/cli"
 	"github.com/garyburd/redigo/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -15,8 +16,20 @@ type Application struct {
 	Db     *gorm.DB        `inject:""`
 }
 
-func (p *Application) DbMigrate() error {
-	return LoopEngine(func(en Engine) error {
-		return en.Migrate()
-	})
+//==============================================================================
+
+func New(c *cli.Context) (*Application, error) {
+	cfg, err := Load(c)
+	if err != nil {
+		return nil, err
+	}
+	app := Application{}
+	if err = Use(&app, cfg); err != nil {
+		return nil, err
+	}
+	if err = beans.Populate(); err != nil {
+		return nil, err
+	}
+
+	return &app, nil
 }

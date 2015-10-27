@@ -48,9 +48,16 @@ func (p *BaseEngine) Shell() []cli.Command {
 					Aliases: []string{"s"},
 					Flags: []cli.Flag{
 						KSANA_ENV,
+						cli.StringFlag{
+							Name:   "database, d",
+							Value:  "postgresql",
+							Usage:  "Preconfigure for selected database (options: mysql/postgresql/sqlite3)",
+							EnvVar: "KSANA_ENV",
+						},
 					},
 					Action: func(c *cli.Context) {
 						env := c.String("environment")
+						db := c.String("database")
 						fn := fmt.Sprintf("config/%s/settings.toml", env)
 						if err := Mkdirs(fmt.Sprintf("config/%s", env)); err != nil {
 							log.Fatal(err)
@@ -71,8 +78,7 @@ func (p *BaseEngine) Shell() []cli.Command {
 								Secrets: ToBase64(buf),
 							},
 							Database: DatabaseCfg{
-								Dialect: "postgres",
-								Url:     "user=postgres dbname=itpkg sslmode=disable",
+								Dialect: db,
 								Pool: PoolCfg{
 									MaxIdle: 6,
 									MaxOpen: 180,
@@ -91,6 +97,17 @@ func (p *BaseEngine) Shell() []cli.Command {
 								Host: "localhost",
 								Port: 9200,
 							},
+						}
+
+						switch db {
+						case "postgresql":
+							cfg.Database.Url = "user=postgres dbname=itpkg sslmode=disable"
+						case "mysql":
+							cfg.Database.Url = "root:@/itpkg?charset=utf8&parseTime=True&loc=Local"
+						case "sqlite3":
+							cfg.Database.Url = "tmp/itpkg.db"
+						default:
+							log.Fatalf("Unsupport database %s", db)
 						}
 
 						log.Printf("Generate file %s\n", fn)
