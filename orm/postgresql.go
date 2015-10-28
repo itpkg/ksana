@@ -40,7 +40,17 @@ func (p *PostgresqlDialect) Delete(table, where string) string {
 }
 
 func (p *PostgresqlDialect) translate(s string) string {
-	return s
+	ss := strings.Split(s, "?")
+	sl := len(ss)
+	rt := ""
+	for k, v := range ss {
+		rt += v
+		if k+1 < sl {
+			rt += fmt.Sprintf("$%d", k+1)
+		}
+
+	}
+	return rt
 }
 
 func (p *PostgresqlDialect) CreateDatabase(name string) string {
@@ -125,7 +135,7 @@ func (p *PostgresqlDialect) Time(name string, nullable bool, def_val *time.Time)
 	}
 	dv := ""
 	if def_val != nil {
-		dv = fmt.Sprintf(" DEFAULT '%s'", def_val.Format("15:04:05"))
+		dv = fmt.Sprintf(" DEFAULT '%s'", def_val.Format("15:04:05-07:00"))
 	}
 	return fmt.Sprintf("%s TIME%s%s", name, ns, dv)
 }
@@ -149,7 +159,7 @@ func (p *PostgresqlDialect) Timestamp(name string, nullable bool, def_val *time.
 	}
 	dv := ""
 	if def_val != nil {
-		dv = fmt.Sprintf(" DEFAULT '%s'", def_val.Format("2006-01-02 15:04:05"))
+		dv = fmt.Sprintf(" DEFAULT '%s'", def_val.Format("2006-01-02 15:04:05 -07:00"))
 	}
 	return fmt.Sprintf("%s TIMESTAMP%s%s", name, ns, dv)
 }
