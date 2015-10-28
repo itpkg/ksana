@@ -15,6 +15,7 @@ type Configuration struct {
 	Database      DatabaseCfg      `toml:"database"`
 	Redis         RedisCfg         `toml:"redis"`
 	Elasticsearch ElasticsearchCfg `toml:"elasticsearch"`
+	Workers       map[string]int   `toml:"workers"`
 }
 
 type HttpCfg struct {

@@ -24,7 +24,8 @@ import (
 )
 
 type BaseEngine struct {
-	Db *gorm.DB `inject:""`
+	Db  *gorm.DB       `inject:""`
+	Cfg *Configuration `inject:""`
 }
 
 func (p *BaseEngine) Router() {
@@ -42,11 +43,12 @@ func (p *BaseEngine) Migrate() error {
 }
 
 func (p *BaseEngine) Job() {
+
 	workers.Process("email",
 		func(message *workers.Msg) {
 
 		},
-		5)
+		p.Cfg.Workers["email"])
 }
 
 func (p *BaseEngine) Seed() error {
@@ -129,6 +131,33 @@ func (p *BaseEngine) Shell() []cli.Command {
 			Usage:       "assets operations",
 			Subcommands: []cli.Command{},
 		},
+		{
+			Name:    "worker",
+			Aliases: []string{"w"},
+			Usage:   "starting background job",
+			Flags: []cli.Flag{
+				KSANA_ENV,
+				cli.IntFlag{
+					Name:  "port, p",
+					Value: 10001,
+					Usage: "stats will be available at http://localhost:PORT/stats",
+				},
+			},
+			Action: func(c *cli.Context) {
+				if _, err := New(c); err != nil {
+					log.Fatal(c)
+				}
+				go workers.StatsServer(c.Int("port"))
+				if err := LoopEngine(func(en Engine) error {
+					en.Job()
+					return nil
+				}); err != nil {
+					log.Fatal(c)
+				}
+				workers.Run()
+			},
+		},
+
 		{
 			Name:    "database",
 			Aliases: []string{"db"},
@@ -237,6 +266,7 @@ func (p *BaseEngine) Shell() []cli.Command {
 								Host: "localhost",
 								Port: 9200,
 							},
+							Workers: map[string]int{"email": 2, "default": 12},
 						}
 
 						switch db {

@@ -38,6 +38,7 @@ func TestCfgStore(t *testing.T) {
 			Host: "localhost",
 			Port: 9200,
 		},
+		Workers: map[string]int{"aaa": 1, "bbb": 2, "ccc": 3},
 	}
 
 	if err := cfg.Store(cfg_file); err != nil {
