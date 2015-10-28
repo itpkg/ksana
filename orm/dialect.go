@@ -5,6 +5,11 @@ import (
 )
 
 type Dialect interface {
+	Select(table, where, order string, limit, offset uint, columns ...string) string
+	Update(table, where string, columns ...string) string
+	Insert(table string, columns ...string) string
+	Delete(table, where string) string
+
 	CreateDatabase(name string) string
 	DropDatabase(name string) string
 	CreateTable(name string, columns ...string) string

@@ -9,6 +9,40 @@ import (
 type PostgresqlDialect struct {
 }
 
+func (p *PostgresqlDialect) Select(table, where, order string, limit, offset uint, columns ...string) string {
+	if order != "" {
+		order = fmt.Sprintf(" ORDER BY %s", order)
+	}
+	return p.translate(fmt.Sprintf("SELECT %s FROM %s WHERE %s%s LIMIT %d OFFSET %d", strings.Join(columns, ", "), table, where, order, limit, offset))
+}
+
+func (p *PostgresqlDialect) Update(table, where string, columns ...string) string {
+	vs := make([]string, len(columns))
+	for k, v := range columns {
+		vs[k] = fmt.Sprintf("%s = ?", v)
+	}
+	return p.translate(fmt.Sprintf("UPDATE %s SET %s WHERE %s", table, strings.Join(vs, ", "), where))
+}
+
+func (p *PostgresqlDialect) Insert(table string, columns ...string) string {
+	vs := make([]string, len(columns))
+	for i, _ := range columns {
+		vs[i] = "?"
+	}
+	return p.translate(fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)", table, strings.Join(columns, ", "), strings.Join(vs, ", ")))
+}
+
+func (p *PostgresqlDialect) Delete(table, where string) string {
+	if where != "" {
+		where = fmt.Sprintf(" WHERE %s", where)
+	}
+	return p.translate(fmt.Sprintf("DELETE %s%s", table, where))
+}
+
+func (p *PostgresqlDialect) translate(s string) string {
+	return s
+}
+
 func (p *PostgresqlDialect) CreateDatabase(name string) string {
 	return fmt.Sprintf("CREATE DATABASE %s ENCODING='UTF8'", name)
 }
@@ -41,7 +75,7 @@ func (p *PostgresqlDialect) index_name(table string, columns ...string) string {
 }
 
 func (p *PostgresqlDialect) Id() string {
-	return fmt.Sprintf("ID SERIAL PRIMARY KEY")
+	return fmt.Sprintf("id SERIAL PRIMARY KEY")
 }
 
 func (p *PostgresqlDialect) String(name string, length uint, nullable bool, def_val interface{}) string {
