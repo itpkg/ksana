@@ -134,15 +134,12 @@ func (p *Dao) Set(db *gorm.DB, key string, val interface{}, encrypt bool) error 
 		}
 	}
 
+	v := Setting{Key: key, Flag: encrypt, Val: vb}
+
 	if db.Where(&Setting{Key: key, Flag: encrypt}).First(&s).RecordNotFound() {
-		s.Key = key
-		s.Flag = encrypt
-		s.Val = vb
-		db.Create(&s)
+		db.Create(&v)
 	} else {
-		s.Flag = encrypt
-		s.Val = vb
-		db.Save(&s)
+		db.Model(&s).Updates(v)
 	}
 	return nil
 }
