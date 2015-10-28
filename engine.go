@@ -10,7 +10,8 @@ type Engine interface {
 	Router()
 	Seed() error
 	Migrate() error
-	Job()
+	Worker()
+	Cron() map[string]func()
 	Deploy()
 	Shell() []cli.Command
 }

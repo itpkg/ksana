@@ -21,6 +21,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/jinzhu/gorm"
 	"github.com/jrallison/go-workers"
+	"github.com/robfig/cron"
 )
 
 type BaseEngine struct {
@@ -42,7 +43,16 @@ func (p *BaseEngine) Migrate() error {
 	return nil
 }
 
-func (p *BaseEngine) Job() {
+func (p *BaseEngine) Cron() map[string]func() {
+	return map[string]func(){
+		"0 30 * * * *": func() {
+			//todo
+			log.Println(time.Now())
+		},
+	}
+}
+
+func (p *BaseEngine) Worker() {
 
 	workers.Process("email",
 		func(message *workers.Msg) {
@@ -131,6 +141,7 @@ func (p *BaseEngine) Shell() []cli.Command {
 			Usage:       "assets operations",
 			Subcommands: []cli.Command{},
 		},
+
 		{
 			Name:    "worker",
 			Aliases: []string{"w"},
@@ -142,18 +153,37 @@ func (p *BaseEngine) Shell() []cli.Command {
 					Value: 10001,
 					Usage: "stats will be available at http://localhost:PORT/stats",
 				},
+				cli.BoolFlag{
+					Name:  "dispatcher, d",
+					Usage: "starting with dispatcher",
+				},
 			},
 			Action: func(c *cli.Context) {
 				if _, err := New(c); err != nil {
-					log.Fatal(c)
+					log.Fatal(err)
+				}
+				if c.Bool("dispatcher") {
+					log.Println("start cron job...")
+					cn := cron.New()
+					if err := LoopEngine(func(en Engine) error {
+						for k, v := range en.Cron() {
+							cn.AddFunc(k, v)
+						}
+						return nil
+					}); err != nil {
+						log.Fatal(err)
+					}
+					cn.Start()
 				}
 				go workers.StatsServer(c.Int("port"))
+
 				if err := LoopEngine(func(en Engine) error {
-					en.Job()
+					en.Worker()
 					return nil
 				}); err != nil {
-					log.Fatal(c)
+					log.Fatal(err)
 				}
+
 				workers.Run()
 			},
 		},
