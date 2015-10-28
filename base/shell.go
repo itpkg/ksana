@@ -1,4 +1,4 @@
-package ksana
+package base
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -17,122 +16,11 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/codegangsta/cli"
-	"github.com/jinzhu/gorm"
+	ks "github.com/itpkg/ksana"
 	"github.com/jrallison/go-workers"
 	"github.com/robfig/cron"
 )
-
-type BaseEngine struct {
-	Db  *gorm.DB       `inject:""`
-	Dao *Dao           `inject:""`
-	Cfg *Configuration `inject:""`
-}
-
-func (p *BaseEngine) Router() {
-}
-
-func (p *BaseEngine) Migrate() error {
-	db := p.Db
-
-	db.AutoMigrate(&Setting{}, &Locale{}, &User{}, &Log{}, &Role{}, &Permission{})
-	db.Model(&Locale{}).AddUniqueIndex("idx_base_locales_lang_type_key", "lang", "type", "key")
-	db.Model(&User{}).AddUniqueIndex("idx_base_users_uid_provider", "uid", "provider")
-	db.Model(&Role{}).AddUniqueIndex("idx_base_roles_name_resource_type_id", "name", "resource_type", "resource_id")
-	db.Model(&Permission{}).AddUniqueIndex("idx_base_permissions_role_user", "role_id", "user_id")
-	return nil
-}
-
-func (p *BaseEngine) Cron() map[string]func() {
-	return map[string]func(){
-		"0 0 3 * * *": func() {
-			//todo
-			log.Println(time.Now())
-		},
-	}
-}
-
-func (p *BaseEngine) Worker() {
-
-	workers.Process("email",
-		func(message *workers.Msg) {
-
-		},
-		p.Cfg.Workers["email"])
-}
-
-func (p *BaseEngine) Seed() error {
-	db := p.Db
-	//--------------administrator-------------
-	admin_e := "root@localhost.localdomain"
-
-	if !p.Dao.IsEmailUserExist(db, admin_e) {
-		admin_u, err := p.Dao.CreateEmailUser(db, "Admin", admin_e, "changeme")
-		if err != nil {
-			return err
-		}
-		role_a := Role{Name: "admin"}
-		role_r := Role{Name: "root"}
-		db.Create(&role_a)
-		db.Create(&role_r)
-
-		begin := time.Now()
-		end := begin.AddDate(10, 0, 0)
-		db.Create(&Permission{
-			RoleID:   role_a.ID,
-			UserID:   admin_u.ID,
-			StartUp:  begin,
-			ShutDown: end,
-		})
-		db.Create(&Permission{
-			RoleID:   role_r.ID,
-			UserID:   admin_u.ID,
-			StartUp:  begin,
-			ShutDown: end,
-		})
-		db.Create(&Log{
-			UserID:  admin_u.ID,
-			Message: "Init.",
-		})
-	}
-	//--------------locales-------------------
-	root := fmt.Sprintf("%s/locales", PkgRoot(p))
-	files, err := ioutil.ReadDir(root)
-	if err != nil {
-		return err
-	}
-	for _, f := range files {
-		fn := fmt.Sprintf("%s/%s", root, f.Name())
-		log.Printf("Find locale file %s", fn)
-		ss := strings.Split(f.Name(), ".")
-		if len(ss) != 3 {
-			return errors.New(fmt.Sprintf("bad locale file name %s", f.Name))
-		}
-		items := make(map[string]string, 0)
-		if _, err := toml.DecodeFile(fn, &items); err != nil {
-			return err
-		}
-		for k, v := range items {
-			var cn int
-			db.Model(Locale{}).Where(&Locale{Type: ss[0], Lang: ss[1], Key: k}).Count(&cn)
-			if cn == 0 {
-				db.Create(&Locale{
-					Type: ss[0],
-					Lang: ss[1],
-					Key:  k,
-					Val:  v,
-				})
-			}
-		}
-
-	}
-
-	return nil
-}
-
-func (p *BaseEngine) Deploy() {
-}
 
 func (p *BaseEngine) Shell() []cli.Command {
 	return []cli.Command{
@@ -148,7 +36,7 @@ func (p *BaseEngine) Shell() []cli.Command {
 			Aliases: []string{"w"},
 			Usage:   "starting background job",
 			Flags: []cli.Flag{
-				KSANA_ENV,
+				ks.KSANA_ENV,
 				cli.IntFlag{
 					Name:  "port, p",
 					Value: 10001,
@@ -160,13 +48,13 @@ func (p *BaseEngine) Shell() []cli.Command {
 				},
 			},
 			Action: func(c *cli.Context) {
-				if _, err := New(c); err != nil {
+				if _, err := ks.New(c); err != nil {
 					log.Fatal(err)
 				}
 				if c.Bool("dispatcher") {
 					log.Println("start cron job...")
 					cn := cron.New()
-					if err := LoopEngine(func(en Engine) error {
+					if err := ks.LoopEngine(func(en ks.Engine) error {
 						for k, v := range en.Cron() {
 							cn.AddFunc(k, v)
 						}
@@ -178,7 +66,7 @@ func (p *BaseEngine) Shell() []cli.Command {
 				}
 				go workers.StatsServer(c.Int("port"))
 
-				if err := LoopEngine(func(en Engine) error {
+				if err := ks.LoopEngine(func(en ks.Engine) error {
 					en.Worker()
 					return nil
 				}); err != nil {
@@ -199,14 +87,14 @@ func (p *BaseEngine) Shell() []cli.Command {
 					Aliases: []string{"s"},
 					Usage:   "load the seed data into database",
 					Flags: []cli.Flag{
-						KSANA_ENV,
+						ks.KSANA_ENV,
 					},
 					Action: func(c *cli.Context) {
-						_, err := New(c)
+						_, err := ks.New(c)
 						if err != nil {
 							log.Fatal(err)
 						}
-						if err = LoopEngine(func(en Engine) error {
+						if err = ks.LoopEngine(func(en ks.Engine) error {
 							return en.Seed()
 						}); err != nil {
 							log.Fatal(err)
@@ -220,14 +108,14 @@ func (p *BaseEngine) Shell() []cli.Command {
 					Aliases: []string{"m"},
 					Usage:   "migrate the database",
 					Flags: []cli.Flag{
-						KSANA_ENV,
+						ks.KSANA_ENV,
 					},
 					Action: func(c *cli.Context) {
-						_, err := New(c)
+						_, err := ks.New(c)
 						if err != nil {
 							log.Fatal(err)
 						}
-						if err = LoopEngine(func(en Engine) error {
+						if err = ks.LoopEngine(func(en ks.Engine) error {
 							return en.Migrate()
 						}); err != nil {
 							log.Fatal(err)
@@ -247,7 +135,7 @@ func (p *BaseEngine) Shell() []cli.Command {
 					Usage:   "generate a new settings.toml",
 					Aliases: []string{"s"},
 					Flags: []cli.Flag{
-						KSANA_ENV,
+						ks.KSANA_ENV,
 						cli.StringFlag{
 							Name:   "database, d",
 							Value:  "postgresql",
@@ -259,40 +147,40 @@ func (p *BaseEngine) Shell() []cli.Command {
 						env := c.String("environment")
 						db := c.String("database")
 						fn := fmt.Sprintf("config/%s/settings.toml", env)
-						if err := Mkdirs(fmt.Sprintf("config/%s", env)); err != nil {
+						if err := ks.Mkdirs(fmt.Sprintf("config/%s", env)); err != nil {
 							log.Fatal(err)
 						}
 
 						if _, err := os.Stat(fn); err == nil {
 							log.Fatalf("%s already exist!", fn)
 						}
-						buf, err := RandomBytes(512)
+						buf, err := ks.RandomBytes(512)
 						if err != nil {
 							log.Fatal(err)
 						}
 
-						cfg := Configuration{Secrets: buf,
-							Http: HttpCfg{
+						cfg := ks.Configuration{Secrets: buf,
+							Http: ks.HttpCfg{
 								Host: "localhost",
 								Port: 8080,
 							},
-							Database: DatabaseCfg{
+							Database: ks.DatabaseCfg{
 								Dialect: db,
-								Pool: PoolCfg{
+								Pool: ks.PoolCfg{
 									MaxIdle: 6,
 									MaxOpen: 180,
 								},
 							},
-							Redis: RedisCfg{
+							Redis: ks.RedisCfg{
 								Host: "localhost",
 								Port: 6379,
 								Db:   0,
-								Pool: PoolCfg{
+								Pool: ks.PoolCfg{
 									MaxIdle: 4,
 									MaxOpen: 120,
 								},
 							},
-							Elasticsearch: ElasticsearchCfg{
+							Elasticsearch: ks.ElasticsearchCfg{
 								Host: "localhost",
 								Port: 9200,
 							},
@@ -323,15 +211,15 @@ func (p *BaseEngine) Shell() []cli.Command {
 					Aliases: []string{"n"},
 					Usage:   "generage a new nginx config file",
 					Flags: []cli.Flag{
-						KSANA_ENV,
+						ks.KSANA_ENV,
 					},
 					Action: func(c *cli.Context) {
-						cfg, err := Load(c)
+						cfg, err := ks.Load(c)
 						if err != nil {
 							log.Fatal(err)
 						}
 
-						if err := Mkdirs(fmt.Sprintf("config/%s", cfg.Env)); err != nil {
+						if err := ks.Mkdirs(fmt.Sprintf("config/%s", cfg.Env)); err != nil {
 							log.Fatal(err)
 						}
 
@@ -434,7 +322,7 @@ server {
 					Aliases: []string{"c"},
 					Usage:   "generate certificate files",
 					Flags: []cli.Flag{
-						KSANA_ENV,
+						ks.KSANA_ENV,
 						cli.StringFlag{
 							Name:  "name",
 							Value: "whoami",
@@ -467,7 +355,7 @@ server {
 						name := c.String("name")
 						root := fmt.Sprintf("config/%s/ssl", env)
 
-						if err := Mkdirs(root); err != nil {
+						if err := ks.Mkdirs(root); err != nil {
 							log.Fatal(err)
 						}
 						if cert, key, err := generate_certificate(name, c.String("hosts"), c.Bool("ca"), c.Int("bits"), c.Int("years")); err == nil {
@@ -562,128 +450,4 @@ func generate_certificate(name, hosts string, ca bool, size int, years int) ([]b
 	}
 
 	return certOut.Bytes(), keyOut.Bytes(), nil
-}
-
-//==============================================================================
-type Model struct {
-	ID        uint      `gorm:"primary_key"`
-	CreatedAt time.Time `sql:"not null"`
-	UpdatedAt time.Time `sql:"not null"`
-}
-type Setting struct {
-	Model
-	Key  string `sql:"size:255;not null;unique"`
-	Flag bool   `sql:"not null"`
-	Val  []byte `sql:"not null"`
-}
-
-func (p Setting) TableName() string {
-	return "base_settings"
-}
-
-type Locale struct {
-	Model
-	Lang string `sql:"size:5;not null;index"`
-	Key  string `sql:"size:255;not null;index"`
-	Val  string `sql:"type:TEXT;not null"`
-	Type string `sql:"size:8;not null;index"`
-}
-
-func (p Locale) TableName() string {
-	return "base_locales"
-}
-
-type User struct {
-	Model
-	Username    string `sql:"size:255;not null;index"`
-	Email       string `sql:"size:255;not null;unique"`
-	Uid         string `sql:"size:255;not null;index"`
-	Provider    string `sql:"size:8;not null;index"`
-	Password    string `sql:"size:255"`
-	Details     []byte
-	Logs        []Log
-	Permissions []Permission
-}
-
-func (p User) TableName() string {
-	return "base_users"
-}
-
-type Log struct {
-	ID        uint `gorm:"primary_key"`
-	User      User
-	UserID    uint      `sql:"not null"`
-	Message   string    `sql:"size:255;not null"`
-	CreatedAt time.Time `sql:"not null"`
-}
-
-func (p Log) TableName() string {
-	return "base_logs"
-}
-
-type Role struct {
-	Model
-
-	Name         string `sql:"size:255;not null;index"`
-	ResourceType string `sql:"size:255;not null;index;default:''"`
-	ResourceID   uint   `sql:"not null;index;default:0"`
-	Permissions  []Permission
-}
-
-func (p Role) TableName() string {
-	return "base_roles"
-}
-
-type Permission struct {
-	Model
-
-	User     User
-	UserID   uint `sql:"not null"`
-	Role     Role
-	RoleID   uint      `sql:"not null"`
-	StartUp  time.Time `sql:"not null;type:DATE;default:'9999-12-31'"`
-	ShutDown time.Time `sql:"not null;type:DATE;default:'2015-10-27'"`
-}
-
-func (p Permission) TableName() string {
-	return "base_permissions"
-}
-
-//==============================================================================
-type Dao struct {
-	Aes  *Aes  `inject:""`
-	Hmac *Hmac `inject:""`
-}
-
-func (p *Dao) Get(db *gorm.DB, key string, val interface{}) {
-}
-func (p *Dao) Set(db *gorm.DB, key string, val []byte, encrypt bool) {
-}
-func (p *Dao) IsEmailUserExist(db *gorm.DB, email string) bool {
-	var cn int
-	db.Model(User{}).Where(&User{Email: email, Provider: "email"}).Count(&cn)
-	return cn > 0
-}
-func (p *Dao) CreateEmailUser(db *gorm.DB, username, email, password string) (*User, error) {
-	pwd, err := Ssha512([]byte(password), 8)
-	if err != nil {
-		return nil, err
-	}
-	user := User{
-		Username: username,
-		Email:    email,
-		Uid:      Uuid(),
-		Password: pwd,
-		Provider: "email",
-	}
-	db.Create(&user)
-	return &user, nil
-}
-
-//==============================================================================
-
-func init() {
-	var en Engine
-	en = &BaseEngine{}
-	Use(en)
 }

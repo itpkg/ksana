@@ -17,34 +17,30 @@ type Aes struct {
 	Cip cipher.Block `inject:"aes.cipher"`
 }
 
-func (p *Aes) Encrypt(pn []byte) (string, error) {
+func (p *Aes) Encrypt(pn []byte) ([]byte, error) {
 
 	iv := make([]byte, aes.BlockSize)
 	if _, err := rand.Read(iv); err != nil {
-		return "", err
+		return nil, err
 	}
 	cfb := cipher.NewCFBEncrypter(p.Cip, iv)
 	ct := make([]byte, len(pn))
 	cfb.XORKeyStream(ct, pn)
 
-	return base64.StdEncoding.EncodeToString(append(ct, iv...)), nil
+	return append(ct, iv...), nil
 
 }
 
-func (p *Aes) Decrypt(sr string) ([]byte, error) {
-	buf, err := base64.StdEncoding.DecodeString(sr)
-	if err == nil {
-		bln := len(buf)
-		cln := bln - aes.BlockSize
-		ct := buf[0:cln]
-		iv := buf[cln:bln]
+func (p *Aes) Decrypt(sr []byte) ([]byte, error) {
+	bln := len(sr)
+	cln := bln - aes.BlockSize
+	ct := sr[0:cln]
+	iv := sr[cln:bln]
 
-		cfb := cipher.NewCFBDecrypter(p.Cip, iv)
-		pt := make([]byte, cln)
-		cfb.XORKeyStream(pt, ct)
-		return pt, nil
-	}
-	return nil, err
+	cfb := cipher.NewCFBDecrypter(p.Cip, iv)
+	pt := make([]byte, cln)
+	cfb.XORKeyStream(pt, ct)
+	return pt, nil
 }
 
 //==============================================================================
