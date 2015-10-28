@@ -26,6 +26,7 @@ import (
 
 type BaseEngine struct {
 	Db  *gorm.DB       `inject:""`
+	Dao *Dao           `inject:""`
 	Cfg *Configuration `inject:""`
 }
 
@@ -45,7 +46,7 @@ func (p *BaseEngine) Migrate() error {
 
 func (p *BaseEngine) Cron() map[string]func() {
 	return map[string]func(){
-		"0 30 * * * *": func() {
+		"0 0 3 * * *": func() {
 			//todo
 			log.Println(time.Now())
 		},
@@ -66,8 +67,8 @@ func (p *BaseEngine) Seed() error {
 	//--------------administrator-------------
 	admin_e := "root@localhost.localdomain"
 
-	if !IsEmailUserExist(db, admin_e) {
-		admin_u, err := CreateEmailUser(db, "Admin", admin_e, "changeme")
+	if !p.Dao.IsEmailUserExist(db, admin_e) {
+		admin_u, err := p.Dao.CreateEmailUser(db, "Admin", admin_e, "changeme")
 		if err != nil {
 			return err
 		}
@@ -270,11 +271,10 @@ func (p *BaseEngine) Shell() []cli.Command {
 							log.Fatal(err)
 						}
 
-						cfg := Configuration{
+						cfg := Configuration{Secrets: buf,
 							Http: HttpCfg{
-								Host:    "localhost",
-								Port:    8080,
-								Secrets: ToBase64(buf),
+								Host: "localhost",
+								Port: 8080,
 							},
 							Database: DatabaseCfg{
 								Dialect: db,
@@ -572,8 +572,9 @@ type Model struct {
 }
 type Setting struct {
 	Model
-	Key string `sql:"size:255;not null;unique"`
-	Val []byte `sql:"not null"`
+	Key  string `sql:"size:255;not null;unique"`
+	Flag bool   `sql:"not null"`
+	Val  []byte `sql:"not null"`
 }
 
 func (p Setting) TableName() string {
@@ -649,12 +650,21 @@ func (p Permission) TableName() string {
 }
 
 //==============================================================================
-func IsEmailUserExist(db *gorm.DB, email string) bool {
+type Dao struct {
+	Aes  *Aes  `inject:""`
+	Hmac *Hmac `inject:""`
+}
+
+func (p *Dao) Get(db *gorm.DB, key string, val interface{}) {
+}
+func (p *Dao) Set(db *gorm.DB, key string, val []byte, encrypt bool) {
+}
+func (p *Dao) IsEmailUserExist(db *gorm.DB, email string) bool {
 	var cn int
 	db.Model(User{}).Where(&User{Email: email, Provider: "email"}).Count(&cn)
 	return cn > 0
 }
-func CreateEmailUser(db *gorm.DB, username, email, password string) (*User, error) {
+func (p *Dao) CreateEmailUser(db *gorm.DB, username, email, password string) (*User, error) {
 	pwd, err := Ssha512([]byte(password), 8)
 	if err != nil {
 		return nil, err

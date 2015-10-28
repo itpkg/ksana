@@ -11,6 +11,8 @@ import (
 
 type Configuration struct {
 	Env           string           `toml:"-"`
+	Secrets       []byte           `toml:"-"`
+	SecretsS      string           `toml:"secrets"`
 	Http          HttpCfg          `toml:"http"`
 	Database      DatabaseCfg      `toml:"database"`
 	Redis         RedisCfg         `toml:"redis"`
@@ -19,9 +21,8 @@ type Configuration struct {
 }
 
 type HttpCfg struct {
-	Host    string `toml:"host"`
-	Port    int    `toml:"port"`
-	Secrets string `toml:"secrets"`
+	Host string `toml:"host"`
+	Port int    `toml:"port"`
 }
 
 type DatabaseCfg struct {
@@ -59,12 +60,17 @@ func (p *Configuration) Store(file string) error {
 	defer fi.Close()
 
 	end := toml.NewEncoder(fi)
+	p.SecretsS = ToBase64(p.Secrets)
 	return end.Encode(p)
 
 }
 
 func (p *Configuration) Load(file string) error {
-	_, err := toml.DecodeFile(file, p)
+	var err error
+	if _, err = toml.DecodeFile(file, p); err != nil {
+		return err
+	}
+	p.Secrets, err = FromBase64(p.SecretsS)
 	return err
 }
 

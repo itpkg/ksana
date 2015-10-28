@@ -1,6 +1,9 @@
 package ksana
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/sha512"
 	"strconv"
 
 	"github.com/codegangsta/cli"
@@ -26,13 +29,27 @@ func New(c *cli.Context) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
+	//---------database-----------------------
 	var db *gorm.DB
 	if db, err = cfg.Db(); err != nil {
 		return nil, err
 	}
+	//----------encrypt-----------------------
+	var a_c cipher.Block
+	if a_c, err = aes.NewCipher(cfg.Secrets[90:122]); err != nil {
+		return nil, err
+	}
 
+	//----------application-------------------
 	app := Application{}
 	if err = Use(&app, db, cfg); err != nil {
+		return nil, err
+	}
+	if err = Map(map[string]interface{}{
+		"aes.cipher": a_c,
+		"hmac.key":   cfg.Secrets[50:82],
+		"hmac.fn":    sha512.New,
+	}); err != nil {
 		return nil, err
 	}
 	if err = beans.Populate(); err != nil {

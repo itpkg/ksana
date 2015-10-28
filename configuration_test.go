@@ -8,14 +8,15 @@ import (
 
 const cfg_file = "config.toml"
 const port = 8080
+const secrets_len = 512
 
 func TestCfgStore(t *testing.T) {
-	buf, _ := ks.RandomBytes(512)
+	buf, _ := ks.RandomBytes(secrets_len)
 	cfg := ks.Configuration{
+		Secrets: buf,
 		Http: ks.HttpCfg{
-			Host:    "localhost",
-			Port:    port,
-			Secrets: ks.ToBase64(buf),
+			Host: "localhost",
+			Port: port,
 		},
 		Database: ks.DatabaseCfg{
 			Dialect: "postgres",
@@ -56,4 +57,8 @@ func TestCfgLoad(t *testing.T) {
 	if cfg.Http.Port != port {
 		t.Errorf("bad value: %d vs %d", cfg.Http.Port, port)
 	}
+	if len(cfg.Secrets) != secrets_len {
+		t.Errorf("Secrets: %v", cfg.Secrets)
+	}
+
 }

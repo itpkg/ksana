@@ -14,7 +14,7 @@ import (
 
 type Aes struct {
 	//16、24或者32位的[]byte，分别对应AES-128, AES-192或AES-256算法
-	Cip cipher.Block `inject:"aes cipher"`
+	Cip cipher.Block `inject:"aes.cipher"`
 }
 
 func (p *Aes) Encrypt(pn []byte) (string, error) {
@@ -50,8 +50,8 @@ func (p *Aes) Decrypt(sr string) ([]byte, error) {
 //==============================================================================
 
 type Hmac struct {
-	Key []byte           `inject:"hmac key"` //32 bits
-	Fn  func() hash.Hash `inject:"hmac fn"`
+	Key []byte           `inject:"hmac.key"` //32 bits
+	Fn  func() hash.Hash `inject:"hmac.fn"`
 }
 
 func (p *Hmac) Sum(src []byte) []byte {
