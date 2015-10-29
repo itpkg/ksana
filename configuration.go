@@ -3,9 +3,11 @@ package ksana
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/codegangsta/cli"
+	"github.com/garyburd/redigo/redis"
 	"github.com/jinzhu/gorm"
 )
 
@@ -78,7 +80,21 @@ func (p *Configuration) IsProduction() bool {
 	return p.Env == "production"
 }
 
-func (p *Configuration) Db() (*gorm.DB, error) {
+func (p *Configuration) OpenRedis() *redis.Pool {
+	return &redis.Pool{
+		MaxIdle:     p.Redis.Pool.MaxIdle,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", fmt.Sprintf("%s:%d", p.Redis.Host, p.Redis.Port))
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
+}
+
+func (p *Configuration) OpenDb() (*gorm.DB, error) {
 	db, err := gorm.Open(p.Database.Dialect, p.Database.Url)
 	if err != nil {
 		return nil, err

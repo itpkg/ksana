@@ -31,7 +31,7 @@ func New(c *cli.Context) (*Application, error) {
 	}
 	//---------database-----------------------
 	var db *gorm.DB
-	if db, err = cfg.Db(); err != nil {
+	if db, err = cfg.OpenDb(); err != nil {
 		return nil, err
 	}
 	//----------encrypt-----------------------
@@ -42,7 +42,12 @@ func New(c *cli.Context) (*Application, error) {
 
 	//----------application-------------------
 	app := Application{}
-	if err = Use(&app, db, cfg); err != nil {
+	if err = Use(
+		&app,
+		db,
+		cfg,
+		cfg.OpenRedis(),
+	); err != nil {
 		return nil, err
 	}
 	if err = Map(map[string]interface{}{

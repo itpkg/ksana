@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/gob"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,6 +40,14 @@ func Mkdirs(d string) error {
 
 func Uuid() string {
 	return uuid.New()
+}
+
+func FromHex(s string) ([]byte, error) {
+	return hex.DecodeString(s)
+}
+
+func ToHex(bs []byte) string {
+	return hex.EncodeToString(bs)
 }
 
 func ToBits(obj interface{}) ([]byte, error) {
