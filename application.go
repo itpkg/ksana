@@ -8,7 +8,6 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/garyburd/redigo/redis"
-	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/jrallison/go-workers"
 	"github.com/op/go-logging"
@@ -17,7 +16,6 @@ import (
 type Application struct {
 	Cfg    *Configuration  `inject:""`
 	Logger *logging.Logger `inject:""`
-	Router *gin.Engine     `inject:""`
 	Redis  *redis.Pool     `inject:""`
 	Db     *gorm.DB        `inject:""`
 }

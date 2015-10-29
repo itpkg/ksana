@@ -11,13 +11,14 @@ import (
 	"io/ioutil"
 	"log"
 	"math/big"
+	"net/http"
 	"os"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/codegangsta/cli"
-	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
 	ks "github.com/itpkg/ksana"
 	"github.com/jrallison/go-workers"
 	"github.com/robfig/cron"
@@ -44,6 +45,22 @@ func (p *BaseEngine) Shell() []cli.Command {
 			},
 		},
 		{
+			Name:    "routes",
+			Aliases: []string{"ro"},
+			Usage:   "Print out all defined routes in match order, with names",
+			Action: func(c *cli.Context) {
+				router := mux.NewRouter()
+				if err := ks.LoopEngine(func(en ks.Engine) error {
+					en.Mount(router)
+					return nil
+				}); err != nil {
+					log.Fatal(err)
+				}
+				//todo
+
+			},
+		},
+		{
 			Name:    "server",
 			Aliases: []string{"s"},
 			Usage:   "start the ksana server",
@@ -55,17 +72,17 @@ func (p *BaseEngine) Shell() []cli.Command {
 				if err != nil {
 					log.Fatal(err)
 				}
-				if app.Cfg.IsProduction() {
-					gin.SetMode(gin.ReleaseMode)
-				}
-				router := gin.Default()
+				router := mux.NewRouter()
 				if err = ks.LoopEngine(func(en ks.Engine) error {
 					en.Mount(router)
 					return nil
 				}); err != nil {
 					log.Fatal(err)
 				}
-				if err = router.Run(fmt.Sprintf(":%d", app.Cfg.Http.Port)); err != nil {
+
+				http.Handle("/", router)
+
+				if err = http.ListenAndServe(fmt.Sprintf(":%d", app.Cfg.Http.Port), router); err != nil {
 					log.Fatal(err)
 				}
 

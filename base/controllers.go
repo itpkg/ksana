@@ -1,29 +1,32 @@
 package base
 
 import (
-	"github.com/gin-gonic/gin"
+	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-func (p *BaseEngine) Mount(rt *gin.Engine) {
+func (p *BaseEngine) Mount(rt *mux.Router) {
 
-	rt.Static("/assets", "assets")
+	//rt.Static("/assets", "assets")
 
 	//----------------------------------------
-	users := rt.Group("/users")
-	users.POST("/users/sign_in", func(c *gin.Context) {
-	})
-	users.POST("/users/sign_up", func(c *gin.Context) {
-	})
-	users.DELETE("/users/sign_out", func(c *gin.Context) {
-	})
-	users.POST("/users/confirm", func(c *gin.Context) {
-	})
-	users.POST("/users/unlock", func(c *gin.Context) {
-	})
-	users.POST("/users/forgot_password", func(c *gin.Context) {
-	})
-	users.POST("/users/reset_password", func(c *gin.Context) {
-	})
-	users.POST("/users/profile", func(c *gin.Context) {
-	})
+	rt.HandleFunc("/users/sign_in", func(http.ResponseWriter, *http.Request) {
+	}).Methods("POST")
+
+	rt.HandleFunc("/users/sign_up", func(http.ResponseWriter, *http.Request) {
+	}).Methods("POST")
+	rt.HandleFunc("/users/sign_out", func(http.ResponseWriter, *http.Request) {
+	}).Methods("DELETE")
+	rt.HandleFunc("/users/confirm", func(http.ResponseWriter, *http.Request) {
+	}).Methods("POST")
+	rt.HandleFunc("/users/unlock", func(http.ResponseWriter, *http.Request) {
+	}).Methods("POST")
+	rt.HandleFunc("/users/forgot_password", func(http.ResponseWriter, *http.Request) {
+	}).Methods("POST")
+	rt.HandleFunc("/users/reset_password", func(http.ResponseWriter, *http.Request) {
+	}).Methods("POST")
+	rt.HandleFunc("/users/profile", func(http.ResponseWriter, *http.Request) {
+	}).Methods("POST")
+
 }

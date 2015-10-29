@@ -37,7 +37,7 @@ type User struct {
 	Uid         string `sql:"size:255;not null;index"`
 	Provider    string `sql:"size:8;not null;index"`
 	Password    string `sql:"size:255"`
-	Details     []byte
+	Profile     []byte
 	Logs        []Log
 	Permissions []Permission
 }
@@ -122,6 +122,7 @@ func (p *Dao) Get(db *gorm.DB, key string, val interface{}) error {
 		return ks.FromJson(s.Val, val)
 	}
 }
+
 func (p *Dao) Set(db *gorm.DB, key string, val interface{}, encrypt bool) error {
 	s := Setting{}
 	vb, e := ks.ToJson(val)
@@ -164,4 +165,13 @@ func (p *Dao) CreateEmailUser(db *gorm.DB, username, email, password string) (*U
 	}
 	db.Create(&user)
 	return &user, nil
+}
+
+func (p *Dao) FindUserByUid(db *gorm.DB, uid string) *User {
+	user := User{}
+	if db.Where("uid = ?").First(&user).RecordNotFound() {
+		return nil
+	} else {
+		return &user
+	}
 }

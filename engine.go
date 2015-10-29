@@ -2,13 +2,13 @@ package ksana
 
 import (
 	"github.com/codegangsta/cli"
-	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
 )
 
 type EngineHandler func(en Engine) error
 
 type Engine interface {
-	Mount(*gin.Engine)
+	Mount(Router *mux.Router)
 	Seed() error
 	Migrate() error
 	Worker()
