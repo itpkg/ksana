@@ -143,11 +143,13 @@ func (p *Dao) Set(db *gorm.DB, key string, val interface{}, encrypt bool) error 
 	}
 	return nil
 }
+
 func (p *Dao) IsEmailUserExist(db *gorm.DB, email string) bool {
 	var cn int
 	db.Model(User{}).Where(&User{Email: email, Provider: "email"}).Count(&cn)
 	return cn > 0
 }
+
 func (p *Dao) CreateEmailUser(db *gorm.DB, username, email, password string) (*User, error) {
 	pwd, err := ks.Ssha512([]byte(password), 8)
 	if err != nil {

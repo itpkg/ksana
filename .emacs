@@ -1,5 +1,5 @@
-(set-default-font "WenQuanYi Zen Hei 12")
-;(set-default-font "YaHei Consolas Hybrid 14")
+;(set-default-font "WenQuanYi Zen Hei 12")
+(set-default-font "YaHei Consolas Hybrid 14")
 
 (custom-set-variables
    '(initial-frame-alist (quote ((fullscreen . maximized)))))
