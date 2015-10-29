@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	"github.com/gin-gonic/gin"
 	ks "github.com/itpkg/ksana"
 	"github.com/jrallison/go-workers"
 	"github.com/robfig/cron"
@@ -25,12 +26,51 @@ import (
 func (p *BaseEngine) Shell() []cli.Command {
 	return []cli.Command{
 		{
-			Name:        "assets",
-			Aliases:     []string{"ass"},
-			Usage:       "assets operations",
-			Subcommands: []cli.Command{},
+			Name:    "assets",
+			Aliases: []string{"a"},
+			Usage:   "assets operations",
+			Subcommands: []cli.Command{
+				{
+					Name:    "build",
+					Aliases: []string{"b"},
+					Usage:   "compile all the assets.",
+					Flags: []cli.Flag{
+						ks.KSANA_ENV,
+					},
+					Action: func(c *cli.Context) {
+						//todo
+					},
+				},
+			},
 		},
+		{
+			Name:    "server",
+			Aliases: []string{"s"},
+			Usage:   "start the ksana server",
+			Flags: []cli.Flag{
+				ks.KSANA_ENV,
+			},
+			Action: func(c *cli.Context) {
+				app, err := ks.New(c)
+				if err != nil {
+					log.Fatal(err)
+				}
+				if app.Cfg.IsProduction() {
+					gin.SetMode(gin.ReleaseMode)
+				}
+				router := gin.Default()
+				if err = ks.LoopEngine(func(en ks.Engine) error {
+					en.Mount(router)
+					return nil
+				}); err != nil {
+					log.Fatal(err)
+				}
+				if err = router.Run(fmt.Sprintf(":%d", app.Cfg.Http.Port)); err != nil {
+					log.Fatal(err)
+				}
 
+			},
+		},
 		{
 			Name:    "worker",
 			Aliases: []string{"w"},

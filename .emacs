@@ -21,7 +21,24 @@
 (defalias 'yes-or-no-p 'y-or-n-p)
 (setq tab-width 4)
 
-;(setq make-backup-files nil)
+;backup/autosave
+(defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
+(defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
+(setq backup-directory-alist (list (cons ".*" backup-dir)))
+(setq auto-save-list-file-prefix autosave-dir)
+(setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
+
+;git clone https://github.com/mattfidler/tabbar-ruler.el.git
+;(add-to-list 'load-path "~/.emacs.d/tabbar-ruler.el")
+;(setq tabbar-ruler-global-tabbar t) ; If you want tabbar
+;(setq tabbar-ruler-global-ruler t) ; if you want a global ruler
+;(setq tabbar-ruler-popup-menu t) ; If you want a popup menu.
+;(setq tabbar-ruler-popup-toolbar t) ; If you want a popup toolbar
+;(setq tabbar-ruler-popup-scrollbar t) ; If you want to only show the
+                                      ; scroll bar when your mouse is moving.
+;(require 'tabbar-ruler)
+
+
 
 ;git clone git://jblevins.org/git/markdown-mode.git ~/.emacs.d/markdown-mode
 (add-to-list 'load-path "~/.emacs.d/markdown-mode")
@@ -44,9 +61,3 @@
 (require 'go-mode-autoloads)
 
 
-;backup/autosave
-(defvar backup-dir (expand-file-name "~/.emacs.d/backup/"))
-(defvar autosave-dir (expand-file-name "~/.emacs.d/autosave/"))
-(setq backup-directory-alist (list (cons ".*" backup-dir)))
-(setq auto-save-list-file-prefix autosave-dir)
-(setq auto-save-file-name-transforms `((".*" ,autosave-dir t)))
