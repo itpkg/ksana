@@ -2,6 +2,7 @@ package mux
 
 import (
 	"net/http"
+	"regexp"
 )
 
 type Router struct {
@@ -34,12 +35,30 @@ func (p *Router) Add(method, pattern string, handlers ...HttpHandler) {
 		p.Routes,
 		&Route{
 			Method:   method,
-			Pattern:  pattern,
+			Pattern:  regexp.MustCompile(pattern),
 			Handlers: handlers,
 		},
 	)
 }
 
-func (p *Router) ServeHTTP(http.ResponseWriter, *http.Request) {
-	//todo
+func (p *Router) ServeHTTP(wrt http.ResponseWriter, req *http.Request) {
+	for _, rt := range p.Routes {
+		if rt.Match(req) != nil {
+			ctx := Context{
+				Request: req,
+				Writer:  wrt,
+				params:  make(map[string]interface{}, 0),
+			}
+
+			for _, h := range append(p.Handlers, rt.Handlers...) {
+				if c, e := h(&ctx); e != nil {
+					wrt.WriteHeader(c)
+					wrt.Write([]byte(e.Error()))
+					break
+				}
+			}
+			return
+		}
+	}
+	http.NotFound(wrt, req)
 }
