@@ -1,2 +1,2 @@
-up = ["create table t22(id int)", "create table t22(id int)"]
+up = ["create table t21(id int)", "create table t22(id int)"]
 down = ["drop table t21", "drop table t22"]

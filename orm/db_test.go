@@ -48,7 +48,7 @@ var mig1 = ko.Migration{
 var mig2 = ko.Migration{
 	Id: "222-create_2",
 	Up: []string{
-		"create table t22(id int)",
+		"create table t21(id int)",
 		"create table t22(id int)",
 	},
 	Down: []string{
@@ -81,10 +81,18 @@ func TestConfig(t *testing.T) {
 }
 
 func TestOpen(t *testing.T) {
-	db := ko.Db{}
 
-	if e := db.Open("tmp"); e != nil {
-		t.Errorf("error on open: %v", e)
+	db, err := ko.Open("tmp")
+	if err != nil {
+		t.Errorf("error on open: %v", err)
 	}
 	db.Status(os.Stdout)
+
+	if err = db.Migrate(); err != nil {
+		t.Errorf("error on migrate: %v", err)
+	}
+
+	if err = db.Rollback(); err != nil {
+		t.Errorf("error on rollback: %v", err)
+	}
 }
