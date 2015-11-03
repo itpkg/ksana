@@ -1,0 +1,2 @@
+"current.date" = "SELECT CURRENT_DATE"
+"current.time" = "SELECT CURRENT_TIME"
