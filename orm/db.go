@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/itpkg/ksana/logging"
 )
 
 type Configuration struct {
@@ -46,6 +47,11 @@ type Db struct {
 	cfg        *Configuration
 	mapper     map[string]string
 	migrations []*Migration
+	logger     logging.Logger
+}
+
+func (p *Db) SetLogger(logger logging.Logger) {
+	p.logger = logger
 }
 
 func (p *Db) Commit(fn func(_ *sql.Tx) error) (err error) {
@@ -64,14 +70,20 @@ func (p *Db) Commit(fn func(_ *sql.Tx) error) (err error) {
 	return fn(tx)
 }
 
+func (p *Db) query(name string) string {
+	q := p.mapper[name]
+	if p.logger != nil {
+		p.logger.Debug(q)
+	}
+	return q
+
+}
 func (p *Db) Exec(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
-	//todo logger
-	return tx.Exec(p.mapper[query], args...)
+	return tx.Exec(p.query(query), args...)
 }
 
 func (p *Db) Select(tx *sql.Tx, query string, args ...interface{}) *sql.Row {
-	//todo logger
-	return tx.QueryRow(p.mapper[query], args...)
+	return tx.QueryRow(p.query(query), args...)
 }
 
 func (p *Db) Migrate() error {
@@ -89,6 +101,9 @@ func (p *Db) Migrate() error {
 				continue
 			}
 			for _, s := range m.Up {
+				if p.logger != nil {
+					p.logger.Debug(s)
+				}
 				if _, err = tx.Exec(s); err != nil {
 					return
 				}
@@ -121,6 +136,9 @@ func (p *Db) Rollback() error {
 		for _, m := range p.migrations {
 			if ver == m.Id {
 				for _, s := range m.Down {
+					if p.logger != nil {
+						p.logger.Debug(s)
+					}
 					if _, err = tx.Exec(s); err != nil {
 						return
 					}

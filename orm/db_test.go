@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
+	kl "github.com/itpkg/ksana/logging"
 	ko "github.com/itpkg/ksana/orm"
 	_ "github.com/lib/pq"
 )
@@ -87,6 +88,7 @@ func TestOpen(t *testing.T) {
 		t.Errorf("error on open: %v", err)
 	}
 	db.Status(os.Stdout)
+	db.SetLogger(kl.NewStdoutLogger(kl.DEBUG))
 
 	if err = db.Migrate(); err != nil {
 		t.Errorf("error on migrate: %v", err)
