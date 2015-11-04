@@ -1,16 +1,16 @@
 package i18n
 
 import (
-	orm "github.com/itpkg/ksana/orm"
-	utils "github.com/itpkg/ksana/utils"
+	"github.com/itpkg/ksana/orm"
+	"github.com/itpkg/ksana/utils"
 )
 
 type DatabaseStore struct {
-	db *orm.Db
+	Db *orm.Db `inject:""`
 }
 
 func (p *DatabaseStore) Set(lang, code, msg string) error {
-	row := p.db.Get("i18n.count", lang, code)
+	row := p.Db.Get("i18n.count", lang, code)
 
 	var c int
 	var err error
@@ -19,16 +19,16 @@ func (p *DatabaseStore) Set(lang, code, msg string) error {
 		return err
 	}
 	if c > 0 {
-		_, err = p.db.Exec("i18n.update", msg, lang, code)
+		_, err = p.Db.Exec("i18n.update", msg, lang, code)
 	} else {
-		_, err = p.db.Exec("i18n.add", lang, code, msg)
+		_, err = p.Db.Exec("i18n.add", lang, code, msg)
 
 	}
 	return err
 }
 
 func (p *DatabaseStore) Get(lang, code string) (string, error) {
-	row := p.db.Get("i18n.get", lang, code)
+	row := p.Db.Get("i18n.get", lang, code)
 
 	var msg string
 
@@ -37,7 +37,7 @@ func (p *DatabaseStore) Get(lang, code string) (string, error) {
 }
 
 func (p *DatabaseStore) Loop(lang string, fn func(_, _ string) error) error {
-	rows, err := p.db.Query("i18n.all", lang)
+	rows, err := p.Db.Query("i18n.all", lang)
 	if err != nil {
 		return err
 	}
@@ -56,13 +56,6 @@ func (p *DatabaseStore) Loop(lang string, fn func(_, _ string) error) error {
 }
 
 //==============================================================================
-
-func NewDatabaseStore(db *orm.Db) (Store, error) {
-	ds := DatabaseStore{db: db}
-	err := db.Load(utils.PkgRoot(&ds))
-	if err == nil {
-		return &ds, nil
-	} else {
-		return nil, err
-	}
+func init() {
+	orm.Register(utils.PkgRoot((*DatabaseStore)(nil)))
 }

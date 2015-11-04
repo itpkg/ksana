@@ -14,18 +14,16 @@ func TestDatabase(t *testing.T) {
 	if err != nil {
 		t.Errorf("error on open: %v", err)
 	}
-	db.SetLogger(kl.NewStdoutLogger(kl.DEBUG))
 
-	var ds ki.Store
-	if ds, err = ki.NewDatabaseStore(db); err != nil {
-		t.Errorf("error on new database store: %v", err)
-	}
+	db.Logger = kl.NewStdoutLogger(kl.DEBUG)
+
+	ds := ki.DatabaseStore{Db: db}
 
 	if err = db.Migrate(); err != nil {
 		t.Errorf("error on migrate: %v", err)
 	}
 
-	test_store(t, ds)
+	test_store(t, &ds)
 }
 
 func test_store(t *testing.T, s ki.Store) {
