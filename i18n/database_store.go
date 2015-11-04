@@ -1,11 +1,8 @@
 package i18n
 
 import (
-	"fmt"
-	"os"
-	"reflect"
-
 	orm "github.com/itpkg/ksana/orm"
+	utils "github.com/itpkg/ksana/utils"
 )
 
 type DatabaseStore struct {
@@ -62,7 +59,7 @@ func (p *DatabaseStore) Loop(lang string, fn func(_, _ string) error) error {
 
 func NewDatabaseStore(db *orm.Db) (Store, error) {
 	ds := DatabaseStore{db: db}
-	err := db.Load(fmt.Sprintf("%s/src/%s", os.Getenv("GOPATH"), reflect.TypeOf(&ds).Elem().PkgPath()))
+	err := db.Load(utils.PkgRoot(&ds))
 	if err == nil {
 		return &ds, nil
 	} else {

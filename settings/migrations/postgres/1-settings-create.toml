@@ -1,0 +1,2 @@
+up = ["CREATE TABLE settings(id SERIAL NOT NULL PRIMARY KEY, \"key\" VARCHAR(255) NOT NULL, encrypt BOOL NOT NULL DEFAULT FALSE, value BYTEA NOT NULL, updated TIMESTAMP NOT NULL, created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)", "CREATE UNIQUE INDEX idx_settings_key ON settings (\"key\")"]
+down = ["DROP TABLE settings"]

@@ -1,4 +1,4 @@
-package ksana
+package utils
 
 import (
 	"bytes"

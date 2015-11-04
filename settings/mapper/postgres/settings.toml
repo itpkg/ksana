@@ -1,0 +1,4 @@
+"settings.get" = "SELECT encrypt, value FROM settings WHERE \"key\"=$1 LIMIT 1"
+"settings.add" = "INSERT INTO settings(\"key\", encrypt, value, updated) VALUES($1, $2, $3, CURRENT_TIMESTAMP)"
+"settings.update" = "UPDATE settings SET encrypt=$1, value=$2, updated=CURRENT_TIMESTAMP WHERE \"key\"=$3"
+"settings.count" = "SELECT COUNT(*) FROM settings WHERE \"key\"=$1"

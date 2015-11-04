@@ -1,12 +1,11 @@
-package ksana_test
+package utils_test
 
 import (
 	"strings"
 	"testing"
 	"time"
 
-	ks "github.com/itpkg/ksana"
-	kb "github.com/itpkg/ksana/base"
+	ks "github.com/itpkg/ksana/utils"
 )
 
 const hello = "Hello, KSANA."
@@ -15,8 +14,8 @@ var now = time.Now()
 var obj = map[string]interface{}{"message": hello, "ok": true, "value": 1.1, "time": now}
 
 func TestPkgRoot(t *testing.T) {
-	pr := ks.PkgRoot(&kb.BaseEngine{})
-	if strings.HasSuffix(pr, "github.com/itpkg/ksana/base") {
+	pr := ks.PkgRoot((*ks.Aes)(nil))
+	if strings.HasSuffix(pr, "github.com/itpkg/ksana/utils") {
 		t.Logf("pkg root: %s", pr)
 	} else {
 		t.Errorf("bad pkg root")

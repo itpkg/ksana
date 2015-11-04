@@ -1,11 +1,11 @@
-package ksana_test
+package utils_test
 
 import (
 	"crypto/aes"
 	"crypto/sha512"
 	"testing"
 
-	ks "github.com/itpkg/ksana"
+	ks "github.com/itpkg/ksana/utils"
 )
 
 const salt_len = 32

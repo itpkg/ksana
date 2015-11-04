@@ -49,7 +49,7 @@ var mig1 = ko.Migration{
 var mig2 = ko.Migration{
 	Id: "222-create_2",
 	Up: []string{
-		"create table t21(id int)",
+		"create table t21(id int, \"key\" varchar(255))",
 		"create table t22(id int)",
 	},
 	Down: []string{
