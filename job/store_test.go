@@ -1,50 +1,42 @@
 package job_test
 
-import (
+import(
 	"testing"
-	"time"
 
-	"github.com/garyburd/redigo/redis"
 	kj "github.com/itpkg/ksana/job"
+	ku "github.com/itpkg/ksana/utils"
 )
 
+var redis_p = ku.OpenRedisPool("localhost", 6379, 0)
+var hello = "Hello, Ksana-Job!"
+
 func TestStore(t *testing.T) {
-	test_store(t, kj.NewRedisStore(&pool))
+	test_store(t, kj.NewRedisStore(redis_p))
 }
 
-var pool = redis.Pool{
-	MaxIdle:     5,
-	IdleTimeout: 240 * time.Second,
-	Dial: func() (redis.Conn, error) {
-		return redis.Dial("tcp", "localhost:6379")
-
-	},
-	TestOnBorrow: func(c redis.Conn, t time.Time) error {
-		_, err := c.Do("PING")
-		return err
-	},
-}
 
 func test_store(t *testing.T, s kj.Store) {
-	queue := "test"
-	args := []interface{}{"aaa", 111, time.Now()}
-
-	if err := s.Push(queue, args...); err != nil {
-		t.Errorf("error on push: %v", err)
+	msg,err := kj.NewMessage(hello)
+	if err!= nil{
+		t.Errorf("bad in new message: %v", err)
 	}
-
-	var hello string
-	var version int
-	var now time.Time
-
-	if err := s.Pop(queue, &hello, &version, &now); err == nil {
-		args1 := []interface{}{hello, version, now}
-		t.Logf("Get %v", args1)
-		if args1[1] != args[1] || args1[0] != args[0] {
-			t.Errorf("Buf want %v", args)
+	
+	if err:= s.Push("test", msg); err!=nil{
+		t.Errorf("bad in push: %v", err)
+	}
+	if name, msg1, err:=s.Pop("test", "fuck"); err==nil{
+		t.Logf("get message from [%s]", name)
+		var hello1 string
+		if err = msg1.Parse(&hello1); err!=nil{
+			t.Errorf("bad in parse message: %v", err)
 		}
-	} else {
-		t.Errorf("error on pop: %v", err)
-	}
+		if hello1 != hello{
+			t.Errorf("Want %s, But get %v", hello, hello1)
+		}
+		
 
+	}else{
+				t.Errorf("bad in pop: %v", err)
+	}
 }
+

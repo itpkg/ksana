@@ -16,8 +16,25 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/pborman/uuid"
 )
+
+func ReadFromToml(f string, v interface{}) error {
+	_, err := toml.DecodeFile(f, v)
+	return err
+}
+
+func WriteToToml(f string, v interface{}) error {
+	fi, err := os.Create(f)
+	defer fi.Close()
+
+	if err == nil {
+		end := toml.NewEncoder(fi)
+		err = end.Encode(v)
+	}
+	return err
+}
 
 func PkgRoot(o interface{}) string {
 	return fmt.Sprintf("%s/src/%s", os.Getenv("GOPATH"), reflect.TypeOf(o).Elem().PkgPath())

@@ -1,6 +1,6 @@
 package job
 
-type Store interface {
-	Push(queue string, args ...interface{}) error
-	Pop(queue string, args ...interface{}) error
+type Store interface{
+	Push(queue string, msg *Message) error
+	Pop(queues ...string)(string, *Message, error)
 }
