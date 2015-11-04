@@ -1,22 +1,15 @@
 package job
 
-type Worker interface{
+type Worker interface {
 	Do(msg *Message) error
 }
 
-workers := map[string]Worker
+var workers = make(map[string]Worker, 0)
 
 //==============================================================================
-func Register(queue string, worker Worker){
-	workers[queue] :=  worker
+func Register(queue string, worker Worker) {
+	workers[queue] = worker
 }
 
 func Run(file cfg) {
-	fn := func() error{
-		store.Get()
-	}
-	for i:=0; i<threads; i++{
-		
-	}
 }
-

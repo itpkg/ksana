@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestRegexp(t *testing.T) {	
+func TestRegexp(t *testing.T) {
 	re := regexp.MustCompile(`(?P<first>\d+)\.(\d+).(?P<second>\d+)`)
 	t.Logf("to string: %s", re.String())
 

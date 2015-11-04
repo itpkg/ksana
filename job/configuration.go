@@ -1,5 +1,4 @@
 package job
 
-type Configuration{
-	
+type Configuration struct {
 }

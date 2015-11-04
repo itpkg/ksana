@@ -1,17 +1,17 @@
 package job
 
-import(
+import (
 	"fmt"
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/itpkg/ksana/utils"
 )
 
-type RedisStore struct{
+type RedisStore struct {
 	pool *redis.Pool
 }
 
-func (p *RedisStore)	Push(queue string, msg *Message) error {
+func (p *RedisStore) Push(queue string, msg *Message) error {
 	c := p.pool.Get()
 	defer c.Close()
 	buf, err := utils.ToJson(msg)
@@ -24,12 +24,12 @@ func (p *RedisStore)	Push(queue string, msg *Message) error {
 
 }
 
-func (p *RedisStore)	Pop(queues ...string)(string, *Message, error) {
+func (p *RedisStore) Pop(queues ...string) (string, *Message, error) {
 	c := p.pool.Get()
 	defer c.Close()
 
 	args := make([]interface{}, 0)
-	for _, q:=range queues{
+	for _, q := range queues {
 		args = append(args, p.queue(q))
 	}
 	args = append(args, 0)
@@ -38,17 +38,16 @@ func (p *RedisStore)	Pop(queues ...string)(string, *Message, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	
+
 	name := string(rep[0].([]byte)[6:])
-	msg := Message{}				
+	msg := Message{}
 	err = utils.FromJson(rep[1].([]byte), &msg)
-	if err != nil{
+	if err != nil {
 		return "", nil, err
 	}
 	return name, &msg, nil
 
 }
-
 
 func (p *RedisStore) queue(name string) string {
 	return fmt.Sprintf("job://%s", name)
