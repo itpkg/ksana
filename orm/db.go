@@ -44,14 +44,10 @@ func (p *Configuration) Source() string {
 
 type Db struct {
 	db         *sql.DB
-	cfg        *Configuration
+	cfg        *Configuration `inject:""`
 	mapper     map[string]string
 	migrations []*Migration
-	logger     logging.Logger
-}
-
-func (p *Db) SetLogger(logger logging.Logger) {
-	p.logger = logger
+	Logger     logging.Logger `inject:""`
 }
 
 func (p *Db) Commit(fn func(_ *sql.Tx) error) (err error) {
@@ -72,9 +68,7 @@ func (p *Db) Commit(fn func(_ *sql.Tx) error) (err error) {
 
 func (p *Db) query(name string) string {
 	q := p.mapper[name]
-	if p.logger != nil {
-		p.logger.Debug(q)
-	}
+	p.Logger.Debug(q)
 	return q
 
 }
@@ -114,9 +108,7 @@ func (p *Db) Migrate() error {
 				continue
 			}
 			for _, s := range m.Up {
-				if p.logger != nil {
-					p.logger.Debug(s)
-				}
+				p.Logger.Debug(s)
 				if _, err = tx.Exec(s); err != nil {
 					return
 				}
@@ -149,9 +141,7 @@ func (p *Db) Rollback() error {
 		for _, m := range p.migrations {
 			if ver == m.Id {
 				for _, s := range m.Down {
-					if p.logger != nil {
-						p.logger.Debug(s)
-					}
+					p.Logger.Debug(s)
 					if _, err = tx.Exec(s); err != nil {
 						return
 					}

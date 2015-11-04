@@ -87,8 +87,9 @@ func TestOpen(t *testing.T) {
 	if err != nil {
 		t.Errorf("error on open: %v", err)
 	}
+	db.Logger = kl.NewStdoutLogger(kl.DEBUG)
+
 	db.Status(os.Stdout)
-	db.SetLogger(kl.NewStdoutLogger(kl.DEBUG))
 
 	if err = db.Migrate(); err != nil {
 		t.Errorf("error on migrate: %v", err)
