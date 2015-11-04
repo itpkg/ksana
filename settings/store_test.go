@@ -22,17 +22,13 @@ func TestDatabase(t *testing.T) {
 	cip, _ := aes.NewCipher(key)
 	aes := ku.Aes{Cip: cip}
 
-	var ds ks.Store
-	ds = DatabaseStore{Db: db, Aes: aes}
-	if err = db.Load(); err != nil {
-		t.Errorf("error on new database store: %v", err)
-	}
+	ds := ks.DatabaseStore{Db: db, Aes: &aes}
 
 	if err = db.Migrate(); err != nil {
 		t.Errorf("error on migrate: %v", err)
 	}
 
-	test_store(t, ds)
+	test_store(t, &ds)
 }
 
 func test_store(t *testing.T, s ks.Store) {
