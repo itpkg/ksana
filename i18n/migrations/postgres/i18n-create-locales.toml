@@ -1,0 +1,2 @@
+up = ["CREATE TABLE locales(id SERIAL NOT NULL PRIMARY KEY, lang CHAR(5) NOT NULL DEFAULT 'en-US', code varchar(255) NOT NULL, message varchar(1000) NOT NULL)", "CREATE UNIQUE INDEX idx_locales_lang_code ON locales (lang, code)", "CREATE INDEX idx_locales_lang ON locales (lang)", "CREATE INDEX idx_locales_code ON locales (code)"]
+down = ["DROP TABLE locales"]

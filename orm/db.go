@@ -78,22 +78,35 @@ func (p *Db) query(name string) string {
 	return q
 
 }
-func (p *Db) Exec(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
+
+func (p *Db) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return p.db.Exec(p.query(query), args...)
+}
+
+func (p *Db) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return p.db.Query(p.query(query), args...)
+}
+
+func (p *Db) Get(query string, args ...interface{}) *sql.Row {
+	return p.db.QueryRow(p.query(query), args...)
+}
+
+func (p *Db) ExecT(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
 	return tx.Exec(p.query(query), args...)
 }
 
-func (p *Db) Select(tx *sql.Tx, query string, args ...interface{}) *sql.Row {
+func (p *Db) GetT(tx *sql.Tx, query string, args ...interface{}) *sql.Row {
 	return tx.QueryRow(p.query(query), args...)
 }
 
 func (p *Db) Migrate() error {
 	return p.Commit(func(tx *sql.Tx) (err error) {
-		if _, err = p.Exec(tx, "schema_migrations.check"); err != nil {
+		if _, err = p.ExecT(tx, "schema_migrations.check"); err != nil {
 			return
 		}
 		for _, m := range p.migrations {
 			var c int
-			row := p.Select(tx, "schema_migrations.count", m.Id)
+			row := p.GetT(tx, "schema_migrations.count", m.Id)
 			if err = row.Scan(&c); err != nil {
 				return
 			}
@@ -108,7 +121,7 @@ func (p *Db) Migrate() error {
 					return
 				}
 			}
-			if _, err = p.Exec(tx, "schema_migrations.add", m.Id); err != nil {
+			if _, err = p.ExecT(tx, "schema_migrations.add", m.Id); err != nil {
 				return
 			}
 		}
@@ -120,12 +133,12 @@ func (p *Db) Migrate() error {
 
 func (p *Db) Rollback() error {
 	return p.Commit(func(tx *sql.Tx) (err error) {
-		if _, err = p.Exec(tx, "schema_migrations.check"); err != nil {
+		if _, err = p.ExecT(tx, "schema_migrations.check"); err != nil {
 			return
 		}
 		var id int
 		var ver string
-		row := p.Select(tx, "schema_migrations.last")
+		row := p.GetT(tx, "schema_migrations.last")
 		err = row.Scan(&id, &ver)
 		if err == sql.ErrNoRows {
 			return nil
@@ -145,7 +158,7 @@ func (p *Db) Rollback() error {
 				}
 			}
 		}
-		_, err = p.Exec(tx, "schema_migrations.remove", id)
+		_, err = p.ExecT(tx, "schema_migrations.remove", id)
 
 		return
 	})

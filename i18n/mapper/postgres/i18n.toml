@@ -1,0 +1,5 @@
+"i18n.get" = "SELECT message FROM locales WHERE lang=$1 AND code=$2 LIMIT 1"
+"i18n.add" = "INSERT INTO locales(lang, code, message) VALUES($1, $2, $3)"
+"i18n.update" = "UPDATE locales SET message=$1 WHERE lang=$2 AND code=$3"
+"i18n.count" = "SELECT COUNT(*) FROM locales WHERE lang=$1 AND code=$2"
+"i18n.all" = "SELECT code, message FROM locales WHERE lang=$1 ORDER BY code ASC"
