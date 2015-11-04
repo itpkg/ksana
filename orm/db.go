@@ -7,40 +7,9 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	"github.com/itpkg/ksana/logging"
+	"github.com/itpkg/ksana/utils"
 )
-
-type Configuration struct {
-	Driver   string                 `toml:"driver"`
-	Host     string                 `toml:"host"`
-	Port     int                    `toml:"port"`
-	User     string                 `toml:"user"`
-	Password string                 `toml:"password"`
-	Name     string                 `toml:"name"`
-	MaxOpen  int                    `toml:"max_open"`
-	MaxIdle  int                    `toml:"max_idle"`
-	Extra    map[string]interface{} `toml:"extra"`
-}
-
-func (p *Configuration) Source() string {
-	ex := make([]string, 0)
-	for k, v := range p.Extra {
-		ex = append(ex, fmt.Sprintf("%s=%v", k, v))
-	}
-	return fmt.Sprintf(
-		"%s://%s:%s@%s:%d/%s?%s",
-		p.Driver,
-		p.User,
-		p.Password,
-		p.Host,
-		p.Port,
-		p.Name,
-		strings.Join(ex, "&"),
-	)
-}
-
-//==============================================================================
 
 type Db struct {
 	db         *sql.DB
@@ -167,10 +136,10 @@ func (p *Db) Status(w io.Writer) {
 	}
 }
 
-func (p *Db) Load(dir string) error {
-	err := p.list_files(fmt.Sprintf("%s/mapper/%s", dir, p.cfg.Driver), func(d, n string) error {
+func (p *Db) load(dir string) error {
+	err := p.list_files(fmt.Sprintf("%s/mappers/%s", dir, p.cfg.Driver), func(d, n string) error {
 		tmp := make(map[string]string, 0)
-		if _, e := toml.DecodeFile(fmt.Sprintf("%s/%s", d, n), &tmp); e != nil {
+		if e := utils.FromToml(fmt.Sprintf("%s/%s", d, n), &tmp); e != nil {
 			return e
 		}
 		for k, v := range tmp {
@@ -185,7 +154,7 @@ func (p *Db) Load(dir string) error {
 	//---------
 	err = p.list_files(fmt.Sprintf("%s/migrations/%s", dir, p.cfg.Driver), func(d, n string) error {
 		mig := Migration{}
-		if _, e := toml.DecodeFile(fmt.Sprintf("%s/%s", d, n), &mig); e != nil {
+		if e := utils.FromToml(fmt.Sprintf("%s/%s", d, n), &mig); e != nil {
 			return e
 		}
 		mig.Id = n[0 : len(n)-5]
@@ -211,16 +180,18 @@ func (p *Db) list_files(dir string, fn func(_, _ string) error) error {
 
 //==============================================================================
 
+func init() {
+	Register(utils.PkgRoot((*Db)(nil)))
+}
+
 func Open(dir string) (*Db, error) {
 	cfg := Configuration{}
-	_, err := toml.DecodeFile(fmt.Sprintf("%s/database.toml", dir), &cfg)
-	if err != nil {
+	if err := utils.FromToml(fmt.Sprintf("%s/database.toml", dir), &cfg); err != nil {
 		return nil, err
 	}
 
 	//--------
-	var db *sql.DB
-	db, err = sql.Open(cfg.Driver, cfg.Source())
+	db, err := sql.Open(cfg.Driver, cfg.Source())
 
 	if err == nil {
 		db.SetMaxOpenConns(cfg.MaxOpen)
@@ -238,20 +209,12 @@ func Open(dir string) (*Db, error) {
 		migrations: make([]*Migration, 0),
 	}
 
-	err = rdb.Load(dir)
-	if err == nil {
-		switch cfg.Driver {
-		case "postgres":
-			rdb.mapper["schema_migrations.check"] = "CREATE TABLE IF NOT EXISTS schema_migrations(id SERIAL NOT NULL PRIMARY KEY, version VARCHAR(255) NOT NULL UNIQUE, created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)"
-			rdb.mapper["schema_migrations.last"] = "SELECT id, version FROM schema_migrations ORDER BY id DESC LIMIT 1"
-			rdb.mapper["schema_migrations.remove"] = "DELETE FROM schema_migrations WHERE id = $1"
-			rdb.mapper["schema_migrations.count"] = "SELECT count(*) FROM schema_migrations WHERE version = $1"
-			rdb.mapper["schema_migrations.add"] = "INSERT INTO schema_migrations(version) VALUES($1)"
-		case "mysql":
-			//todo
+	for _, m := range modules {
+		if err = rdb.load(m); err != nil {
+			return nil, err
 		}
-		return &rdb, nil
-	} else {
-		return nil, err
 	}
+
+	return &rdb, nil
+
 }

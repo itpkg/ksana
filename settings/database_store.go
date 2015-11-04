@@ -1,13 +1,13 @@
 package settings
 
 import (
-	orm "github.com/itpkg/ksana/orm"
-	utils "github.com/itpkg/ksana/utils"
+	"github.com/itpkg/ksana/orm"
+	"github.com/itpkg/ksana/utils"
 )
 
 type DatabaseStore struct {
-	db  *orm.Db
-	aes *utils.Aes
+	Db  *orm.Db    `inject:""`
+	Aes *utils.Aes `inject:""`
 }
 
 func (p *DatabaseStore) Set(key string, val interface{}, encrypt bool) error {
@@ -16,13 +16,13 @@ func (p *DatabaseStore) Set(key string, val interface{}, encrypt bool) error {
 		return err
 	}
 	if encrypt {
-		buf, err = p.aes.Encrypt(buf)
+		buf, err = p.Aes.Encrypt(buf)
 		if err != nil {
 			return err
 		}
 	}
 
-	row := p.db.Get("settings.count", key)
+	row := p.Db.Get("settings.count", key)
 
 	var c int
 
@@ -30,16 +30,16 @@ func (p *DatabaseStore) Set(key string, val interface{}, encrypt bool) error {
 		return err
 	}
 	if c > 0 {
-		_, err = p.db.Exec("settings.update", encrypt, buf, key)
+		_, err = p.Db.Exec("settings.update", encrypt, buf, key)
 	} else {
-		_, err = p.db.Exec("settings.add", key, encrypt, buf)
+		_, err = p.Db.Exec("settings.add", key, encrypt, buf)
 
 	}
 	return err
 }
 
 func (p *DatabaseStore) Get(key string, val interface{}) error {
-	row := p.db.Get("settings.get", key)
+	row := p.Db.Get("settings.get", key)
 
 	var buf []byte
 	var enc bool
@@ -49,7 +49,7 @@ func (p *DatabaseStore) Get(key string, val interface{}) error {
 		return err
 	}
 	if enc {
-		buf, err = p.aes.Decrypt(buf)
+		buf, err = p.Aes.Decrypt(buf)
 		if err != nil {
 			return err
 		}
@@ -59,13 +59,6 @@ func (p *DatabaseStore) Get(key string, val interface{}) error {
 }
 
 //==============================================================================
-
-func NewDatabaseStore(db *orm.Db, aes *utils.Aes) (Store, error) {
-	ds := DatabaseStore{db: db, aes: aes}
-	err := db.Load(utils.PkgRoot(&ds))
-	if err == nil {
-		return &ds, nil
-	} else {
-		return nil, err
-	}
+func init() {
+	orm.Register(utils.PkgRoot((*DatabaseStore)(nil)))
 }

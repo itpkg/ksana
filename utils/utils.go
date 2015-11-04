@@ -20,12 +20,12 @@ import (
 	"github.com/pborman/uuid"
 )
 
-func ReadFromToml(f string, v interface{}) error {
+func FromToml(f string, v interface{}) error {
 	_, err := toml.DecodeFile(f, v)
 	return err
 }
 
-func WriteToToml(f string, v interface{}) error {
+func ToToml(f string, v interface{}) error {
 	fi, err := os.Create(f)
 	defer fi.Close()
 

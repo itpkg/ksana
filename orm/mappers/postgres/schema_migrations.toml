@@ -1,0 +1,5 @@
+"schema_migrations.check" = "CREATE TABLE IF NOT EXISTS schema_migrations(id SERIAL NOT NULL PRIMARY KEY, version VARCHAR(255) NOT NULL UNIQUE, created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+"schema_migrations.last" = "SELECT id, version FROM schema_migrations ORDER BY id DESC LIMIT 1"
+"schema_migrations.remove" = "DELETE FROM schema_migrations WHERE id = $1"
+"schema_migrations.count" = "SELECT count(*) FROM schema_migrations WHERE version = $1"
+"schema_migrations.add" = "INSERT INTO schema_migrations(version) VALUES($1)"

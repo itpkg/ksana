@@ -16,14 +16,15 @@ func TestDatabase(t *testing.T) {
 	if err != nil {
 		t.Errorf("error on open: %v", err)
 	}
-	db.SetLogger(kl.NewStdoutLogger(kl.DEBUG))
+	db.Logger = kl.NewStdoutLogger(kl.DEBUG)
 
 	key, _ := ku.RandomBytes(32)
 	cip, _ := aes.NewCipher(key)
 	aes := ku.Aes{Cip: cip}
 
 	var ds ks.Store
-	if ds, err = ks.NewDatabaseStore(db, &aes); err != nil {
+	ds = DatabaseStore{Db: db, Aes: aes}
+	if err = db.Load(); err != nil {
 		t.Errorf("error on new database store: %v", err)
 	}
 

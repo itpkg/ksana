@@ -24,12 +24,12 @@ var cfg = ko.Configuration{
 	MaxIdle:  6,
 }
 
-var mapper1_f = "tmp/mapper/postgres/1.toml"
+var mapper1_f = "tmp/mappers/postgres/1.toml"
 var mapper1 = map[string]string{
 	"current.time": "SELECT CURRENT_TIME",
 	"current.date": "SELECT CURRENT_DATE",
 }
-var mapper2_f = "tmp/mapper/postgres/2.toml"
+var mapper2_f = "tmp/mappers/postgres/2.toml"
 var mapper2 = map[string]string{
 	"current.timestamp": "SELECT CURRENT_TIMESTAMP",
 }
