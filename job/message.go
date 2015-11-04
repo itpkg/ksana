@@ -1,6 +1,7 @@
 package job
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/itpkg/ksana/utils"
@@ -8,10 +9,14 @@ import (
 
 type Message struct {
 	Id      string    `json:"id"`
+	Title   string    `json:"title"`
 	Body    []byte    `json:"body"`
 	Created time.Time `json:"created"`
 }
 
+func (p *Message) String() string {
+	return fmt.Sprintf("[%s] %s", p.Id, p.Title)
+}
 func (p *Message) Parse(args ...interface{}) error {
 	return utils.FromJson(p.Body, &args)
 }

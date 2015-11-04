@@ -2,6 +2,7 @@ package job
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/itpkg/ksana/utils"
@@ -24,7 +25,7 @@ func (p *RedisStore) Push(queue string, msg *Message) error {
 
 }
 
-func (p *RedisStore) Pop(queues ...string) (string, *Message, error) {
+func (p *RedisStore) Pop(timeout time.Duration, queues ...string) (string, *Message, error) {
 	c := p.pool.Get()
 	defer c.Close()
 
@@ -32,7 +33,7 @@ func (p *RedisStore) Pop(queues ...string) (string, *Message, error) {
 	for _, q := range queues {
 		args = append(args, p.queue(q))
 	}
-	args = append(args, 0)
+	args = append(args, int(timeout.Seconds()))
 
 	rep, err := redis.Values(c.Do("BRPOP", args...))
 	if err != nil {
@@ -49,8 +50,26 @@ func (p *RedisStore) Pop(queues ...string) (string, *Message, error) {
 
 }
 
+func (p *RedisStore) Done(queue string, msg *Message, err error) {
+	c := p.pool.Get()
+	defer c.Close()
+
+	if err == nil {
+		c.Do("lpush", p.queueS(queue), msg.String())
+	} else {
+		c.Do("lpush", p.queueF(queue), fmt.Sprintf("%s failed. reason: %v", msg.String(), err))
+	}
+}
+
 func (p *RedisStore) queue(name string) string {
 	return fmt.Sprintf("job://%s", name)
+}
+
+func (p *RedisStore) queueS(name string) string {
+	return fmt.Sprintf("job-success://%s", name)
+}
+func (p *RedisStore) queueF(name string) string {
+	return fmt.Sprintf("job-fail://%s", name)
 }
 
 //==============================================================================

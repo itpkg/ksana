@@ -2,6 +2,7 @@ package job_test
 
 import (
 	"testing"
+	"time"
 
 	kj "github.com/itpkg/ksana/job"
 	ku "github.com/itpkg/ksana/utils"
@@ -23,7 +24,7 @@ func test_store(t *testing.T, s kj.Store) {
 	if err := s.Push("test", msg); err != nil {
 		t.Errorf("bad in push: %v", err)
 	}
-	if name, msg1, err := s.Pop("test", "fuck"); err == nil {
+	if name, msg1, err := s.Pop(5*time.Hour, "test", "fuck"); err == nil {
 		t.Logf("get message from [%s]", name)
 		var hello1 string
 		if err = msg1.Parse(&hello1); err != nil {

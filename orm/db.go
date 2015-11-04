@@ -13,7 +13,7 @@ import (
 
 type Db struct {
 	db         *sql.DB
-	cfg        *Configuration `inject:""`
+	cfg        *Configuration
 	mapper     map[string]string
 	migrations []*Migration
 	Logger     logging.Logger `inject:""`
