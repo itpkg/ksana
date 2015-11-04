@@ -4,26 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
 	kc "github.com/itpkg/ksana/cache"
+	ku "github.com/itpkg/ksana/utils"
 )
 
 func TestRedisStore(t *testing.T) {
-	s := kc.RedisStore{
-		Pool: &redis.Pool{
-			MaxIdle:     5,
-			IdleTimeout: 240 * time.Second,
-			Dial: func() (redis.Conn, error) {
-				return redis.Dial("tcp", "localhost:6379")
-
-			},
-			TestOnBorrow: func(c redis.Conn, t time.Time) error {
-				_, err := c.Do("PING")
-				return err
-			},
-		},
-	}
-	test_store(t, &s)
+	test_store(t, &kc.RedisStore{Pool: ku.OpenRedisPool("localhost", 6379, 0)})
 }
 
 func test_store(t *testing.T, s kc.Store) {
