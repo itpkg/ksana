@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/itpkg/ksana/cmd"
+	"github.com/itpkg/ksana/utils"
 )
 
 func Open(env string) Logger {
@@ -17,11 +18,9 @@ func Open(env string) Logger {
 			fmt.Fprintf(os.Stderr, "error on create syslog logger: %v", err)
 		}
 
-		if _, err := os.Stat(log_d); os.IsNotExist(err) {
-			os.Mkdir(log_d, 0700)
-		}
+		utils.Mkdirs(log_d, 0700)
 
-		if log, err := NewFileLogger(fmt.Sprintf("log/%s.log", env), INFO); err == nil {
+		if log, err := NewFileLogger(fmt.Sprintf("%s/%s.log", log_d, env), INFO); err == nil {
 			return log
 		} else {
 			fmt.Fprintf(os.Stderr, "error on create file logger: %v", err)

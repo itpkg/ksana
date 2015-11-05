@@ -109,6 +109,16 @@ func init() {
 					return db.Rollback()
 				}),
 			},
+			{
+				Name:    "backup",
+				Aliases: []string{"b"},
+				Usage:   "backup the database",
+				Flags:   []cli.Flag{cmd.FLAG_ENV},
+				Action: cli_cfg(func(cfg *Configuration) error {
+					c, a := cfg.Backup()
+					return utils.Shell(c, a...)
+				}),
+			},
 		},
 	})
 }

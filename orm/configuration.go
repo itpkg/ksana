@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/itpkg/ksana/utils"
 )
@@ -54,6 +55,18 @@ func (p *Configuration) Drop() (string, []string) {
 	switch p.Driver {
 	case "postgres":
 		return "psql", []string{"-U", p.User, "-h", p.Host, "-p", strconv.Itoa(p.Port), "-c", fmt.Sprintf("DROP DATABASE %s", p.Name)}
+	default:
+		return "echo", []string{"unknown database."}
+	}
+}
+
+func (p *Configuration) Backup() (string, []string) {
+	utils.Mkdirs("tmp/backup", 0700)
+	now := time.Now().Format("20060102150405")
+	name := fmt.Sprintf("tmp/backup/%s_%s.sql", now, p.Name)
+	switch p.Driver {
+	case "postgres":
+		return "pg_dump", []string{"-U", p.User, "-h", p.Host, "-p", strconv.Itoa(p.Port), "-d", p.Name, "-f", name}
 	default:
 		return "echo", []string{"unknown database."}
 	}
