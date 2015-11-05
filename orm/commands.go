@@ -1,8 +1,6 @@
 package orm
 
 import (
-	"log"
-
 	"github.com/codegangsta/cli"
 	"github.com/itpkg/ksana/cmd"
 	"github.com/itpkg/ksana/logging"
@@ -14,13 +12,14 @@ func cli_cfg(fn func(*Configuration) error) func(*cli.Context) {
 		env := cmd.Env(c)
 		cfg := Configuration{}
 		err := cfg.Load(env)
+		log := logging.Open(env)
 		if err == nil {
 			err = fn(&cfg)
 		}
 		if err == nil {
-			log.Println("Done.")
+			log.Info("Done.")
 		} else {
-			log.Fatal(err)
+			log.Error(err.Error())
 		}
 	}
 }
@@ -103,7 +102,7 @@ func init() {
 			{
 				Name:    "rollback",
 				Aliases: []string{"r"},
-				Usage:   "rollback the database",
+				Usage:   "rolls the schema back to the previous version",
 				Flags:   []cli.Flag{cmd.FLAG_ENV},
 				Action: cli_db(func(db *Db) error {
 					return db.Rollback()
