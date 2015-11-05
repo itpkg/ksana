@@ -7,13 +7,13 @@ import (
 type Context struct {
 	Writer  http.ResponseWriter
 	Request *http.Request
-	params  map[string]interface{}
+	Params  map[string]interface{}
 }
 
-func (p *Context) Set(key string, val interface{}) {
-	p.params[key] = val
+func (p *Context) Json(val interface{}) {
+	//todo
 }
 
-func (p *Context) Get(key string) interface{} {
-	return p.params[key]
+func (p *Context) Xml(val interface{}) {
+	//todo
 }

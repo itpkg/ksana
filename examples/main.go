@@ -3,10 +3,12 @@ package main
 import (
 	_ "github.com/lib/pq"
 
-	kc "github.com/itpkg/ksana/cmd"
+	"github.com/itpkg/ksana"
 	_ "github.com/itpkg/ksana/orm"
 )
 
 func main() {
-	kc.Run()
+	if err := ksana.Run(); err != nil {
+		panic(err)
+	}
 }

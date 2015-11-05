@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/codegangsta/cli"
 )
 
@@ -12,12 +10,11 @@ func Register(args ...cli.Command) {
 	commands = append(commands, args...)
 }
 
-func Run() error {
+func New(name, usage, version string) *cli.App {
 	app := cli.NewApp()
-	app.Name = "ksana"
-	app.Usage = "A web framwork for go like rails"
-	app.Version = "v20151104"
+	app.Name = name
+	app.Usage = usage
+	app.Version = version
 	app.Commands = commands
-
-	return app.Run(os.Args)
+	return app
 }
