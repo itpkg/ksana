@@ -41,10 +41,28 @@ func (p *Configuration) Load(env string) error {
 	return utils.FromToml(fmt.Sprintf("config/%s/database.toml", env), p)
 }
 
+func (p *Configuration) Create() (string, []string) {
+	switch p.Driver {
+	case "postgres":
+		return "psql", []string{"-U", p.User, "-h", p.Host, "-p", strconv.Itoa(p.Port), "-c", fmt.Sprintf("CREATE DATABASE %s WITH ENCODING='UTF8'", p.Name)}
+	default:
+		return "echo", []string{"unknown database."}
+	}
+}
+
+func (p *Configuration) Drop() (string, []string) {
+	switch p.Driver {
+	case "postgres":
+		return "psql", []string{"-U", p.User, "-h", p.Host, "-p", strconv.Itoa(p.Port), "-c", fmt.Sprintf("DROP DATABASE %s", p.Name)}
+	default:
+		return "echo", []string{"unknown database."}
+	}
+}
+
 func (p *Configuration) Connect() (string, []string) {
 	switch p.Driver {
 	case "postgres":
-		return "psql", []string{"-U", p.User, "-d", p.Name, "-h", p.Host, "-p", strconv.Itoa(p.Port), "-W"}
+		return "psql", []string{"-U", p.User, "-d", p.Name, "-h", p.Host, "-p", strconv.Itoa(p.Port)}
 	default:
 		return "echo", []string{"unknown database."}
 	}

@@ -52,6 +52,36 @@ func init() {
 		Flags:   []cli.Flag{cmd.FLAG_ENV},
 		Subcommands: []cli.Command{
 			{
+				Name:    "console",
+				Aliases: []string{"c"},
+				Usage:   "database console",
+				Flags:   []cli.Flag{cmd.FLAG_ENV},
+				Action: cli_cfg(func(cfg *Configuration) error {
+					c, a := cfg.Connect()
+					return utils.Shell(c, a...)
+				}),
+			},
+			{
+				Name:    "create",
+				Aliases: []string{"n"},
+				Usage:   "create database",
+				Flags:   []cli.Flag{cmd.FLAG_ENV},
+				Action: cli_cfg(func(cfg *Configuration) error {
+					c, a := cfg.Create()
+					return utils.Shell(c, a...)
+				}),
+			},
+			{
+				Name:    "drop",
+				Aliases: []string{"d"},
+				Usage:   "drop database",
+				Flags:   []cli.Flag{cmd.FLAG_ENV},
+				Action: cli_cfg(func(cfg *Configuration) error {
+					c, a := cfg.Drop()
+					return utils.Shell(c, a...)
+				}),
+			},
+			{
 				Name:    "seed",
 				Aliases: []string{"s"},
 				Usage:   "load the seed data into database",
@@ -80,9 +110,5 @@ func init() {
 				}),
 			},
 		},
-		Action: cli_cfg(func(cfg *Configuration) error {
-			c, a := cfg.Connect()
-			return utils.Shell(c, a...)
-		}),
 	})
 }
