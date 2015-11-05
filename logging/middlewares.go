@@ -1,11 +1,10 @@
-package ksana
+package logging
 
 import (
-	"github.com/itpkg/ksana/logging"
 	"github.com/itpkg/ksana/mux"
 )
 
-func Logger(log logging.Logger) mux.Middleware {
+func Middleware(log Logger) mux.Middleware {
 	return func(next mux.Handler) mux.Handler {
 		return func(ctx *mux.Context) (int, error) {
 			log.Info("%s %s", ctx.Request.Method, ctx.Request.URL.Path)

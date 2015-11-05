@@ -12,7 +12,7 @@ import (
 )
 
 func TestDatabase(t *testing.T) {
-	db, err := ko.Open("../orm/tmp")
+	db, err := ko.Open("test")
 	if err != nil {
 		t.Errorf("error on open: %v", err)
 	}
