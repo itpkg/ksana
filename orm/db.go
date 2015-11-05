@@ -186,7 +186,7 @@ func init() {
 
 func Open(env string) (*Db, error) {
 	cfg := Configuration{}
-	if err := utils.FromToml(fmt.Sprintf("config/%s/database.toml", env), &cfg); err != nil {
+	if err := cfg.Load(env); err != nil {
 		return nil, err
 	}
 

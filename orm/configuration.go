@@ -2,7 +2,10 @@ package orm
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/itpkg/ksana/utils"
 )
 
 type Configuration struct {
@@ -32,6 +35,19 @@ func (p *Configuration) Source() string {
 		p.Name,
 		strings.Join(ex, "&"),
 	)
+}
+
+func (p *Configuration) Load(env string) error {
+	return utils.FromToml(fmt.Sprintf("config/%s/database.toml", env), p)
+}
+
+func (p *Configuration) Connect() (string, []string) {
+	switch p.Driver {
+	case "postgres":
+		return "psql", []string{"-U", p.User, "-d", p.Name, "-h", p.Host, "-p", strconv.Itoa(p.Port), "-W"}
+	default:
+		return "echo", []string{"unknown database."}
+	}
 }
 
 //==============================================================================
