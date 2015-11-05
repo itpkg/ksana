@@ -10,33 +10,38 @@ type Router struct {
 	middlewares []Middleware
 }
 
-func (p *Router) Get(pattern string, handlers ...Handler) {
-	p.Add("GET", pattern, handlers...)
+func (p *Router) Use(ms ...Middleware) {
+	p.middlewares = append(p.middlewares, ms...)
 }
 
-func (p *Router) Post(pattern string, handlers ...Handler) {
-	p.Add("POST", pattern, handlers...)
+func (p *Router) Get(pattern string, middlewares []Middleware, handlers ...Handler) {
+	p.Add("GET", pattern, middlewares, handlers...)
 }
 
-func (p *Router) Put(pattern string, handlers ...Handler) {
-	p.Add("PUT", pattern, handlers...)
+func (p *Router) Post(pattern string, middlewares []Middleware, handlers ...Handler) {
+	p.Add("POST", pattern, middlewares, handlers...)
 }
 
-func (p *Router) Patch(pattern string, handlers ...Handler) {
-	p.Add("PATCH", pattern, handlers...)
+func (p *Router) Put(pattern string, middlewares []Middleware, handlers ...Handler) {
+	p.Add("PUT", pattern, middlewares, handlers...)
 }
 
-func (p *Router) Delete(pattern string, handlers ...Handler) {
-	p.Add("DELETE", pattern, handlers...)
+func (p *Router) Patch(pattern string, middlewares []Middleware, handlers ...Handler) {
+	p.Add("PATCH", pattern, middlewares, handlers...)
 }
 
-func (p *Router) Add(method, pattern string, handlers ...Handler) {
+func (p *Router) Delete(pattern string, middlewares []Middleware, handlers ...Handler) {
+	p.Add("DELETE", pattern, middlewares, handlers...)
+}
+
+func (p *Router) Add(method, pattern string, middlewares []Middleware, handlers ...Handler) {
 	p.routes = append(
 		p.routes,
 		&Route{
-			method:   method,
-			pattern:  regexp.MustCompile(pattern),
-			handlers: handlers,
+			method:      method,
+			pattern:     regexp.MustCompile(pattern),
+			handlers:    handlers,
+			middlewares: middlewares,
 		},
 	)
 }
@@ -53,11 +58,13 @@ func (p *Router) ServeHTTP(wrt http.ResponseWriter, req *http.Request) {
 				return 0, nil
 			}
 
-			for _, m := range rt.middlewares {
+			for i := len(rt.middlewares) - 1; i >= 0; i-- {
+				m := rt.middlewares[i]
 				hds = m(hds)
 			}
 
-			for _, m := range p.middlewares {
+			for i := len(p.middlewares) - 1; i >= 0; i-- {
+				m := p.middlewares[i]
 				hds = m(hds)
 			}
 
@@ -73,4 +80,13 @@ func (p *Router) ServeHTTP(wrt http.ResponseWriter, req *http.Request) {
 		}
 	}
 	http.NotFound(wrt, req)
+}
+
+//==============================================================================
+
+func New() *Router {
+	return &Router{
+		middlewares: make([]Middleware, 0),
+		routes:      make([]*Route, 0),
+	}
 }
