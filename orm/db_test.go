@@ -11,7 +11,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var cfg_f = "tmp/database.toml"
+var cfg_f = "config/test/database.toml"
 var cfg = ko.Configuration{
 	Driver:   "postgres",
 	Host:     "localhost",
@@ -83,7 +83,8 @@ func TestConfig(t *testing.T) {
 
 func TestOpen(t *testing.T) {
 
-	db, err := ko.Open("tmp")
+	ko.Register("tmp")
+	db, err := ko.Open("test")
 	if err != nil {
 		t.Errorf("error on open: %v", err)
 	}
@@ -98,4 +99,5 @@ func TestOpen(t *testing.T) {
 	if err = db.Rollback(); err != nil {
 		t.Errorf("error on rollback: %v", err)
 	}
+
 }

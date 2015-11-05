@@ -184,9 +184,9 @@ func init() {
 	Register(utils.PkgRoot((*Db)(nil)))
 }
 
-func Open(dir string) (*Db, error) {
+func Open(env string) (*Db, error) {
 	cfg := Configuration{}
-	if err := utils.FromToml(fmt.Sprintf("%s/database.toml", dir), &cfg); err != nil {
+	if err := utils.FromToml(fmt.Sprintf("config/%s/database.toml", env), &cfg); err != nil {
 		return nil, err
 	}
 

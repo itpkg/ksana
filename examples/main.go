@@ -3,10 +3,10 @@ package main
 import (
 	_ "github.com/lib/pq"
 
-	ks "github.com/itpkg/ksana"
-	_ "github.com/itpkg/ksana/base"
+	kc "github.com/itpkg/ksana/cmd"
+	_ "github.com/itpkg/ksana/orm"
 )
 
 func main() {
-	ks.Run()
+	kc.Run()
 }
