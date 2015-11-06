@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	ka "github.com/itpkg/ksana/mux/atom"
+	ka "github.com/itpkg/ksana/atom"
 )
 
 func TestAtom(t *testing.T) {

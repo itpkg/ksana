@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	ks "github.com/itpkg/ksana/mux/sitemap"
+	ks "github.com/itpkg/ksana/sitemap"
 )
 
 func TestSitemap(t *testing.T) {

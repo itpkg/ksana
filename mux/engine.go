@@ -1,8 +1,8 @@
 package mux
 
 import (
-	"github.com/itpkg/ksana/mux/atom"
-	"github.com/itpkg/ksana/mux/sitemap"
+	"github.com/itpkg/ksana/atom"
+	"github.com/itpkg/ksana/sitemap"
 )
 
 type Engine interface {
