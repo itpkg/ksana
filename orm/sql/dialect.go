@@ -1,10 +1,10 @@
 package sql
 
-import(
+import (
 	"time"
 )
 
-type Dialect interface{
+type Dialect interface {
 	CreateDatabase(name string) string
 	DropDatabase(name string) string
 	CreateTable(name string, columns ...string) string
@@ -16,7 +16,7 @@ type Dialect interface{
 	Created() string
 	Updated() string
 	Deleted() string
-	
+
 	String(name string, length int, nullable bool, def_val string) string
 	FixString(name string, length int, nullable bool, def_val string) string
 	BigString(name string, nullable bool) string
