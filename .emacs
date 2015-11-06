@@ -61,3 +61,7 @@
 (require 'go-mode-autoloads)
 
 
+;git clone https://github.com/dryman/toml-mode.el.git ~/.emacs.d/toml-mode
+(add-to-list 'load-path "~/.emacs.d/toml-mode/")
+(require 'toml-mode)
+

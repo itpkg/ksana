@@ -1,10 +1,9 @@
 package main
 
 import (
-	_ "github.com/lib/pq"
-
 	"github.com/itpkg/ksana"
-	_ "github.com/itpkg/ksana/orm"
+	_ "github.com/itpkg/ksana/base"
+	_ "github.com/lib/pq"
 )
 
 func main() {

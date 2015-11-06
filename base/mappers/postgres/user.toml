@@ -1,3 +1,9 @@
 "user.email_exist" = "SELECT COUNT(*) FROM users WHERE email=$1"
 "user.sign_in" = "SELECT id, username, status, password FROM users WHERE email=$1 AND provider_type='email'"
+"user.sign_up" = "INSERT INTO users(username, email, password, token, provider_id, provider_type, updated) VALUES($1, $2, $3, $4, $5, 'email', CURRENT_TIMESTAMP)"
+"user.set_password" = "UPDATE users SET password=$1 WHERE id = $2"
+"user.set_info" = "UPDATE users SET username=$1, profile=$2 WHERE id = $3"
+"user.set_status" = "UPDATE users SET status = $1 WHERE id = $3"
+"user.by_token" = "SELECT id, username, email, status FROM users WHERE token = $1"
+
 

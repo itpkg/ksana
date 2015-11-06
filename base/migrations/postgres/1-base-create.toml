@@ -1,2 +1,29 @@
-up = ["CREATE TABLE users(id SERIAL NOT NULL PRIMARY KEY, username VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL, status VARCHAR(8) NOT NULL DEFAULT 'submit', password BYTEA, provider_id VARCHAR(25) NOT NULL, provider_type VARCHAR(16) NOT NULL DEFAULT 'email', profile BYTEA, updated TIMESTAMP NOT NULL, created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)", "CREATE UNIQUE INDEX idx_users_email ON users (email)", "CREATE INDEX idx_users_status ON users (status)", "CREATE INDEX idx_users_username ON users (username)", "CREATE TABLE logs(id SERIAL NOT NULL PRIMARY KEY, user INT NOT NULL, message VARCHAR(255) NOT NULL, type VARCHAR(8) NOT NULL DEFAULT 'INFO', created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)", "CREATE INDEX idx_logs_type ON logs (type)"]
-down = ["DROP TABLE logs", "DROP TABLE users"]
+up = [
+  "CREATE TABLE users(id SERIAL NOT NULL PRIMARY KEY, username VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL, status VARCHAR(8) NOT NULL DEFAULT 'submit', password BYTEA, provider_id VARCHAR(25) NOT NULL, provider_type VARCHAR(16) NOT NULL DEFAULT 'email', token VARCHAR(36) NOT NULL, profile BYTEA, updated TIMESTAMP NOT NULL, created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)", 
+  "CREATE UNIQUE INDEX idx_users_email ON users (email)", 
+  "CREATE UNIQUE INDEX idx_users_token ON users (token)",
+  "CREATE UNIQUE INDEX idx_users_provider_id_type ON users (provider_id, provider_type)",
+  "CREATE INDEX idx_users_status ON users (status)", 
+  "CREATE INDEX idx_users_username ON users (username)",
+  "CREATE INDEX idx_users_provider_id ON users (provider_id)",
+  "CREATE INDEX idx_users_provider_type ON users (provider_type)",
+  
+  "CREATE TABLE logs(id SERIAL NOT NULL PRIMARY KEY, user_id INT NOT NULL, message VARCHAR(255) NOT NULL, type VARCHAR(8) NOT NULL DEFAULT 'INFO', created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)", 
+  "CREATE INDEX idx_logs_type ON logs (type)",
+  
+  "CREATE TABLE roles(id SERIAL NOT NULL PRIMARY KEY, resource_id INT, resource_type VARCHAR(255) NOT NULL, created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE UNIQUE INDEX idx_roles_resource_id_type ON roles (resource_id, resource_type)",
+  "CREATE INDEX idx_roles_resource_type ON roles (resource_type)",
+
+
+
+  "CREATE TABLE user_roles(id SERIAL NOT NULL PRIMARY KEY, user_id INT NOT NULL, role_id INT NOT NULL, start_up DATE NOT NULL, shut_down DATE NOT NULL, created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+  "CREATE UNIQUE INDEX idx_user_roles_ids ON user_roles (user_id, role_id)",
+]
+
+down = [
+  "DROP TABLE user_roles",
+  "DROP TABLE roles",
+  "DROP TABLE logs",
+  "DROP TABLE users",
+]

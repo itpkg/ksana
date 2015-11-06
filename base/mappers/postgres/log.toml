@@ -1,4 +1,3 @@
-"settings.get" = "SELECT encrypt, value FROM settings WHERE \"key\"=$1 LIMIT 1"
-"settings.add" = "INSERT INTO settings(\"key\", encrypt, value, updated) VALUES($1, $2, $3, CURRENT_TIMESTAMP)"
-"settings.update" = "UPDATE settings SET encrypt=$1, value=$2, updated=CURRENT_TIMESTAMP WHERE \"key\"=$3"
-"settings.count" = "SELECT COUNT(*) FROM settings WHERE \"key\"=$1"
+"log.list" = "SELECT id, user_id, message FROM logs WHERE OFFSET $1 LIMIT $2"
+"log.add" = "INSERT INTO logs(user_id, type, message) VALUES($1, $2, $3)"
+"log.list_by_user" = "SELECT id, type, message FROM logs WHERE user_id = $1 OFFSET $2 LIMIT $3"
