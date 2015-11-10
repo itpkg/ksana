@@ -7,24 +7,32 @@ import (
 	ki "github.com/itpkg/ksana/ioc"
 )
 
-type S struct {
+type S1 struct {
+	Version int        `inject:"version"`
+	Now     *time.Time `inject:"now"`
+	S2      *S2        `inject:"s2"`
+}
+
+type S2 struct {
 	Version int
-	Now     time.Time
+	Now     *time.Time `inject:"now"`
 }
 
 func TestIoc(t *testing.T) {
-	version := 111
 	now := time.Now()
-	if err := ki.Use(&S{Version: version, Now: now}); err != nil {
-		t.Errorf("error on use: %v", err)
-	}
-	if err := ki.Map(map[string]interface{}{"a.1": "aaa", "b.1": "bbb"}); err != nil {
-		t.Errorf("error on map: %v", err)
-	}
-	if err := ki.Loop(func(o interface{}) error {
-		t.Logf("GET %v", o)
-		return nil
-	}); err != nil {
-		t.Errorf("error on loop: %v", err)
+	ki.Use("now", &now)
+	ki.Use("version", 20141110)
+	s1 := S1{}
+	s2 := S2{}
+	ki.Use("s2", &s2)
+	ki.Use("s1", &s1)
+
+	if err := ki.Ping(); err == nil {
+		ki.Loop(func(k string, v interface{}) error {
+			t.Logf("%s = %v", k, v)
+			return nil
+		})
+	} else {
+		t.Errorf("bad in fill %v", err)
 	}
 }

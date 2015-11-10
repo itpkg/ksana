@@ -1,36 +1,52 @@
 package ioc
 
 import (
-	"github.com/facebookgo/inject"
+	"errors"
+	"fmt"
+	"reflect"
 )
 
-var beans inject.Graph
+var beans = make(map[string]interface{})
 
-func Map(objects map[string]interface{}) error {
-	items := make([]*inject.Object, 0)
-	for k, v := range objects {
-		items = append(items, &inject.Object{Value: v, Name: k})
-	}
-	return beans.Provide(items...)
+func Use(k string, v interface{}) {
+	beans[k] = v
 }
 
-func Use(objects ...interface{}) error {
-	items := make([]*inject.Object, 0)
-	for _, v := range objects {
-		items = append(items, &inject.Object{Value: v})
-	}
-	return beans.Provide(items...)
-}
-
-func Loop(fn func(_ interface{}) error) error {
-	for _, obj := range beans.Objects() {
-		if err := fn(obj); err != nil {
-			return err
+func Loop(fn func(string, interface{}) error) error {
+	for k, v := range beans {
+		if e := fn(k, v); e != nil {
+			return e
 		}
 	}
 	return nil
 }
 
-func Build() error {
-	return beans.Populate()
+func Ping() error {
+	for _, v := range beans {
+		rt := reflect.TypeOf(v)
+		rv := reflect.ValueOf(v)
+		if rt.Kind() == reflect.Ptr && rt.Elem().Kind() == reflect.Struct {
+			for i := 0; i < rv.Elem().NumField(); i++ {
+				ft := rt.Elem().Field(i)
+				fv := rv.Elem().Field(i)
+
+				tag := ft.Tag.Get("inject")
+				switch {
+				case tag == "" || tag == "-":
+					break
+				default:
+					if !fv.CanSet() {
+						return errors.New(fmt.Sprintf("can not set field %s:%s@%v", ft.Name, tag, rt))
+					}
+					o := beans[tag]
+					if o == nil {
+						return errors.New(fmt.Sprintf("can not find bean name by %s", tag))
+					}
+					fv.Set(reflect.ValueOf(o))
+				}
+			}
+		}
+	}
+
+	return nil
 }

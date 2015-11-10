@@ -1,20 +1,36 @@
 package validator
 
 import (
+	"errors"
+	"fmt"
 	"regexp"
 )
 
-var patterns = make(map[string]*regexp.Regexp)
+type Handler func(string) error
 
-func Register(name string, pattern string) {
-	patterns[name] = regexp.MustCompile(pattern)
+var handlers = make(map[string]Handler)
+
+func RegisterR(name string, pattern string) {
+	pat := regexp.MustCompile(pattern)
+	handlers[name] = func(v string) error {
+		if pat.MatchString(v) {
+			return nil
+		} else {
+			return errors.New(fmt.Sprintf("not match with %v", pat))
+		}
+	}
+
+}
+
+func Register(name string, h Handler) {
+	handlers[name] = h
 }
 
 //==============================================================================
 
 func init() {
-	Register("username", "")
-	Register("email", "")
-	Register("password", "")
-	Register("not_empty", "")
+	RegisterR("email", `\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*`)
+	RegisterR("url", `[a-zA-z]+://[^\s]*`)
+	RegisterR("ip", `^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$`)
+	RegisterR("password", `^\w{6,20}$`)
 }
